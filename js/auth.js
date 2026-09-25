@@ -46,11 +46,17 @@ async function requireAuth() {
  */
 async function syncUserData() {
   const client = WP_Supabase.getClient();
-  const localData = WP_Utils.initWeddingData();
 
   if (WP_Supabase.isConfigured() && client) {
     const { data: { user } } = await client.auth.getUser();
     if (user) {
+      // Data lokal milik user lain (atau sisa Mode Demo) tidak boleh terbawa ke akun ini
+      if (WP_Utils.getStorage(WP_Utils.STORAGE_KEYS.OWNER) !== user.id) {
+        WP_Utils.clearAppStorage();
+        WP_Utils.setStorage(WP_Utils.STORAGE_KEYS.OWNER, user.id);
+      }
+      const localData = WP_Utils.initWeddingData();
+
       let coupleName = user.user_metadata?.name || 'Ayu & Angga';
       let brideName = 'Ayu';
       let groomName = 'Angga';
@@ -130,6 +136,7 @@ async function syncUserData() {
   }
 
   // Fallback Local Session Sync
+  const localData = WP_Utils.initWeddingData();
   const session = getCurrentSession();
   if (session && session.name) {
     const coupleName = session.name;
@@ -283,10 +290,17 @@ function startDemoSession() {
  */
 async function logout() {
   const client = WP_Supabase.getClient();
+  const session = getCurrentSession();
   if (WP_Supabase.isConfigured() && client) {
     await client.auth.signOut();
   }
-  clearSession();
+  if (session?.authProvider === 'supabase') {
+    // Data akun cloud tersimpan di server; hapus salinan lokal agar tidak terlihat akun lain
+    WP_Utils.clearAppStorage();
+  } else {
+    // Mode Demo / Lokal: data hanya ada di perangkat, jadi hanya sesi yang dihapus
+    clearSession();
+  }
   window.location.href = 'login.html';
 }
 

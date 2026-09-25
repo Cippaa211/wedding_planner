@@ -1,6 +1,7 @@
 -- ==============================================================================
 -- MIGRASI 005: SELARASKAN SKEMA DENGAN KODE APLIKASI
--- Jalankan setelah schema.sql, 002, 003, dan 004. Aman dijalankan ulang.
+-- Jalankan setelah schema.sql, 002, dan 003. Aman dijalankan ulang.
+-- Sudah mencakup kolom wedding_events.event_type dari 004 (tidak masalah bila 004 sudah dijalankan).
 --
 -- - wedding_events.wedding_theme  : dipakai form Akun (Tema Pernikahan)
 -- - wedding_events.engagement_total_budget : total budget terpisah untuk Engagement
@@ -43,7 +44,9 @@ begin
   end if;
 end $$;
 
--- 3. Batasi nilai event_type
+-- 3. Batasi nilai event_type (kolom dibuat di sini bila migrasi 004 belum dijalankan)
+alter table public.wedding_events add column if not exists event_type text not null default 'wedding';
+
 update public.wedding_events
 set event_type = 'wedding'
 where event_type is null or event_type not in ('wedding', 'engagement');

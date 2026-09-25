@@ -8,7 +8,8 @@ const STORAGE_KEYS = {
   EXPENSES: 'wp_expenses',
   SESERAHAN: 'wp_seserahan',
   CHECKLIST_KUA: 'wp_checklist_kua',
-  GUESTS: 'wp_guests'
+  GUESTS: 'wp_guests',
+  OWNER: 'wp_owner' // id user pemilik data lokal (cache) saat ini
 };
 
 // Default seed data matching visual mockups
@@ -178,6 +179,20 @@ function setStorage(key, value) {
 }
 
 /**
+ * Hapus seluruh data aplikasi di localStorage (key wp_* dan engagement_wp_*),
+ * agar data satu akun tidak terbawa ke akun lain di perangkat yang sama.
+ */
+function clearAppStorage() {
+  try {
+    Object.keys(localStorage)
+      .filter(key => key.startsWith('wp_') || key.startsWith('engagement_wp_'))
+      .forEach(key => localStorage.removeItem(key));
+  } catch (e) {
+    console.warn('Error clearing localStorage:', e);
+  }
+}
+
+/**
  * Initialize Default Data
  */
 function initWeddingData() {
@@ -254,6 +269,7 @@ window.WP_Utils = {
   fromDateTimeLocalValue,
   getStorage,
   setStorage,
+  clearAppStorage,
   initWeddingData,
   getEventType,
   getScopedStorageKey,
