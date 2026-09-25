@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Budget & Pengeluaran — Wedding Planner</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/global.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/pages.css">
+</head>
+<body>
+
+  <div class="app-container">
+    <!-- Sidebar Navigation -->
+    <div id="sidebar-container"></div>
+
+    <!-- Main Content Area -->
+    <div class="main-wrapper">
+      <!-- Top Header Bar -->
+      <div id="header-container"></div>
+
+      <!-- Main Content -->
+      <main class="main-content">
+        <div class="budget-page-container">
+
+          <!-- Page Header Title -->
+          <div class="page-header-title">
+            <h2>Budget & Pengeluaran 💰</h2>
+            <p>Kelola alokasi dana, catat transaksi, dan pantau pengeluaran pernikahanmu.</p>
+          </div>
+
+          <!-- 1. 3 Top Summary Cards (Slide 4 Mockup) -->
+          <div class="budget-stats-grid">
+            <!-- Total Budget Card -->
+            <div class="budget-stat-card pink">
+              <div class="stat-card-header">
+                <div class="stat-icon-box">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/></svg>
+                </div>
+                <span class="stat-title">TOTAL BUDGET</span>
+              </div>
+              <div class="stat-amount" id="stat-total-budget">Rp 50.000.000</div>
+              <div class="stat-desc">Anggaran keseluruhan pernikahan</div>
+              <div class="stat-action-link" onclick="WP_Budget.openEditBudgetModal()">
+                <span>Ubah Anggaran →</span>
+              </div>
+            </div>
+
+            <!-- Total Terpakai Card -->
+            <div class="budget-stat-card yellow">
+              <div class="stat-card-header">
+                <div class="stat-icon-box">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>
+                </div>
+                <span class="stat-title">TOTAL TERPAKAI</span>
+              </div>
+              <div class="stat-amount" id="stat-total-spent">Rp 9.123.000</div>
+              <div class="stat-desc">Pengeluaran yang sudah dialokasikan</div>
+              <div class="stat-action-link" onclick="document.getElementById('daftar-pengeluaran-card').scrollIntoView({ behavior: 'smooth' })">
+                <span>Lihat Detail →</span>
+              </div>
+            </div>
+
+            <!-- Sisa Budget Card -->
+            <div class="budget-stat-card green">
+              <div class="stat-card-header">
+                <div class="stat-icon-box">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
+                </div>
+                <span class="stat-title">SISA BUDGET</span>
+              </div>
+              <div class="stat-amount" id="stat-remaining-budget">Rp 40.877.000</div>
+              <div class="stat-desc">Sisa anggaran yang belum terpakai</div>
+              <div class="stat-action-link" onclick="document.getElementById('ringkasan-pengeluaran-card').scrollIntoView({ behavior: 'smooth' })">
+                <span>Lihat Detail →</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 2. Daftar Pengeluaran Table Card (Slide 4 Mockup) -->
+          <div class="card" id="daftar-pengeluaran-card">
+            <div class="card-header">
+              <div class="card-title-group">
+                <div class="card-title-icon">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                </div>
+                <div>
+                  <h3 class="card-title">Daftar Pengeluaran</h3>
+                  <p class="card-subtitle">Riwayat pengeluaran terbaru untuk persiapan pernikahan.</p>
+                </div>
+              </div>
+              <button type="button" class="btn btn-primary" onclick="WP_Budget.openAddExpenseModal()">
+                <span>+ Tambah Pengeluaran</span>
+              </button>
+            </div>
+
+            <div class="expense-table-wrapper">
+              <table class="expense-table">
+                <thead>
+                  <tr>
+                    <th>Tanggal</th>
+                    <th>Pengeluaran</th>
+                    <th>Kategori</th>
+                    <th>Nominal</th>
+                    <th>Aksi</th>
+                  </tr>
+                </thead>
+                <tbody id="expense-table-body">
+                  <!-- Rendered dynamically by JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- 3. Ringkasan Pengeluaran per Kategori (Donut Chart) -->
+          <div class="card" id="ringkasan-pengeluaran-card">
+            <div class="card-header">
+              <div class="card-title-group">
+                <div class="card-title-icon">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2v10l8.5 5"/></svg>
+                </div>
+                <div>
+                  <h3 class="card-title">Ringkasan Pengeluaran</h3>
+                  <p class="card-subtitle">Perbandingan alokasi anggaran berdasarkan kategori</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="budget-summary-content">
+              <!-- Multi Segment Donut Chart -->
+              <div class="donut-chart-container">
+                <svg class="donut-svg" viewBox="0 0 160 160" id="category-donut-svg">
+                  <!-- Rendered dynamically by JS -->
+                </svg>
+                <div class="donut-center-info">
+                  <span class="donut-center-label" style="color: var(--text-muted); font-size: 0.65rem;" id="cat-donut-center-total">TOTAL TERPAKAI</span>
+                  <span class="donut-center-amount" id="cat-donut-center-amount">Rp 0</span>
+                </div>
+              </div>
+
+              <!-- Legend List -->
+              <div class="budget-legend-list" id="category-legend-list">
+                <!-- Rendered dynamically by JS -->
+              </div>
+            </div>
+          </div>
+
+          <!-- 4. Tips Hemat Card (Slide 4 Mockup) -->
+          <div class="tips-hemat-card">
+            <div class="tips-header">
+              <div class="tips-icon-box">💡</div>
+              <h3 class="tips-title">Tips Hemat</h3>
+            </div>
+            <p style="font-size: var(--font-size-xs); color: #713F12; margin-top: -6px;">
+              Kelola anggaran dengan baik agar hari bahagiamu tetap berjalan lancar.
+            </p>
+            <ul class="tips-list">
+              <li>
+                <span class="tips-check">✓</span>
+                <span><strong>Prioritaskan kebutuhan utama:</strong> Berkas administrasi KUA, mahar/mas kawin, dan hidangan catering wajib didahulukan sebelum dekorasi tambahan.</span>
+              </li>
+              <li>
+                <span class="tips-check">✓</span>
+                <span><strong>Bandingkan minimal 3 vendor:</strong> Tinjau paket fasilitas, ulasan pengantin sebelumnya, dan ketentuan refund sebelum membayar uang muka (DP).</span>
+              </li>
+              <li>
+                <span class="tips-check">✓</span>
+                <span><strong>Pantau jatuh tempo termin:</strong> Catat tanggal jatuh tempo cicilan vendor agar cashflow tetap stabil menuju hari-H.</span>
+              </li>
+            </ul>
+          </div>
+
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- Modal Tambah Pengeluaran -->
+  <div class="modal-overlay" id="modal-add-expense">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 class="modal-title">+ Tambah Pengeluaran Baru</h3>
+        <button type="button" class="btn-table-action" onclick="WP_Budget.closeAddExpenseModal()">✕</button>
+      </div>
+      <form onsubmit="WP_Budget.handleAddExpenseSubmit(event)">
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label" for="exp-name">Nama Pengeluaran</label>
+            <input type="text" id="exp-name" class="form-control" placeholder="Contoh: DP Catering, Jas Pengantin" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="exp-category">Kategori</label>
+            <select id="exp-category" class="form-control" required>
+              <option value="Venue">Venue & Tempat</option>
+              <option value="Akad">Akad & Penghulu</option>
+              <option value="MUA">MUA & Busana</option>
+              <option value="Dokumentasi">Dokumentasi (Foto/Video)</option>
+              <option value="Seserahan">Mahar & Seserahan</option>
+              <option value="Catering">Catering & Konsumsi</option>
+              <option value="Lain-lain">Lain-lain</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="exp-amount">Nominal (Rp)</label>
+            <input type="number" id="exp-amount" class="form-control" placeholder="Contoh: 1500000" min="0" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="exp-date">Tanggal Transaksi</label>
+            <input type="date" id="exp-date" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="exp-status">Status Pembayaran</label>
+            <select id="exp-status" class="form-control">
+              <option value="Lunas">Lunas</option>
+              <option value="DP">DP (Uang Muka)</option>
+              <option value="Belum bayar">Belum Dibayar</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="exp-vendor">Nama Vendor (Opsional)</label>
+            <input type="text" id="exp-vendor" class="form-control" placeholder="Nama vendor atau penjual">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" onclick="WP_Budget.closeAddExpenseModal()">Batal</button>
+          <button type="submit" class="btn btn-primary">Simpan Pengeluaran</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal Edit Total Budget -->
+  <div class="modal-overlay" id="modal-edit-budget">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 class="modal-title">Atur Total Anggaran (Budget)</h3>
+        <button type="button" class="btn-table-action" onclick="WP_Budget.closeEditBudgetModal()">✕</button>
+      </div>
+      <form onsubmit="WP_Budget.handleEditBudgetSubmit(event)">
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label" for="edit-total-budget-input">Total Anggaran Pernikahan (Rp)</label>
+            <input type="number" id="edit-total-budget-input" class="form-control" placeholder="50000000" min="1000000" step="100000" required>
+            <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 6px;">
+              Batas total rencana biaya pernikahan yang ingin dialokasikan.
+            </p>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" onclick="WP_Budget.closeEditBudgetModal()">Batal</button>
+          <button type="submit" class="btn btn-primary">Perbarui Budget</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Supabase CDN Client -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- Scripts -->
+  <script src="js/utils.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/supabase.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/layout.js"></script>
+  <script src="js/budget.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      // Require authentication
+      await WP_Auth.requireAuth();
+
+      // Render Layout
+      WP_Layout.renderSidebar('budget');
+      WP_Layout.renderHeader();
+
+      // Initialize Budget Page
+      await WP_Budget.initBudgetPage();
+    });
+  </script>
+</body>
+</html>
+

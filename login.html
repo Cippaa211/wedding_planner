@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Masuk & Daftar — Wedding Planner</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/global.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/pages.css">
+</head>
+<body class="auth-page">
+
+  <div class="auth-card">
+    <div class="auth-brand">
+      <div class="auth-logo-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+      </div>
+      <h1 class="auth-title">Wedding Planner</h1>
+      <p class="auth-subtitle">Rencanakan pernikahan impianmu dengan mudah & teratur</p>
+    </div>
+
+    <!-- Tabs Masuk / Daftar -->
+    <div class="auth-tabs">
+      <button type="button" class="auth-tab active" id="tab-login" onclick="switchAuthTab('login')">Masuk</button>
+      <button type="button" class="auth-tab" id="tab-register" onclick="switchAuthTab('register')">Daftar Akun</button>
+    </div>
+
+    <!-- Form Masuk -->
+    <form id="form-login" onsubmit="handleLoginSubmit(event)">
+      <div class="form-group">
+        <label class="form-label" for="login-email">Email</label>
+        <input type="email" id="login-email" class="form-control" placeholder="nama@email.com" value="syfa.ega@wedding.id" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="login-password">Kata Sandi</label>
+        <input type="password" id="login-password" class="form-control" placeholder="••••••••" value="rahasia123" required>
+      </div>
+      <button type="submit" class="btn btn-primary btn-block btn-lg" id="btn-submit-login">
+        Masuk ke Akun
+      </button>
+    </form>
+
+    <!-- Form Daftar -->
+    <form id="form-register" style="display: none;" onsubmit="handleRegisterSubmit(event)">
+      <div class="form-group">
+        <label class="form-label" for="reg-couple-name">Nama Pasangan (CPW & CPP)</label>
+        <input type="text" id="reg-couple-name" class="form-control" placeholder="Contoh: Syfa & Ega" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="reg-email">Email</label>
+        <input type="email" id="reg-email" class="form-control" placeholder="nama@email.com" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="reg-password">Kata Sandi</label>
+        <input type="password" id="reg-password" class="form-control" placeholder="Minimal 6 karakter" required minlength="6">
+      </div>
+      <button type="submit" class="btn btn-primary btn-block btn-lg" id="btn-submit-register">
+        Daftar & Mulai Rencana
+      </button>
+    </form>
+
+    <!-- Quick Demo Box -->
+    <div class="demo-account-box">
+      <strong>Mode Cepat / Demo</strong>
+      <p style="margin-top: 4px; font-size: 0.75rem; color: var(--text-muted);">Langsung jelajahi dashboard tanpa perlu memasukkan data baru.</p>
+      <button type="button" class="btn btn-secondary btn-block" style="margin-top: 8px; font-size: 0.8rem;" onclick="handleQuickDemo()">
+        Masuk Mode Demo (Syfa & Ega) 🚀
+      </button>
+    </div>
+  </div>
+
+  <!-- Supabase CDN Client -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <script src="js/utils.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/supabase.js"></script>
+  <script src="js/auth.js"></script>
+  <script>
+    // Tab switcher logic
+    function switchAuthTab(tab) {
+      const loginTab = document.getElementById('tab-login');
+      const registerTab = document.getElementById('tab-register');
+      const loginForm = document.getElementById('form-login');
+      const regForm = document.getElementById('form-register');
+
+      if (tab === 'login') {
+        loginTab.classList.add('active');
+        registerTab.classList.remove('active');
+        loginForm.style.display = 'block';
+        regForm.style.display = 'none';
+      } else {
+        registerTab.classList.add('active');
+        loginTab.classList.remove('active');
+        regForm.style.display = 'block';
+        loginForm.style.display = 'none';
+      }
+    }
+
+    async function handleLoginSubmit(e) {
+      e.preventDefault();
+      const email = document.getElementById('login-email').value;
+      const pass = document.getElementById('login-password').value;
+      const btn = document.getElementById('btn-submit-login');
+
+      try {
+        btn.disabled = true;
+        btn.textContent = 'Memverifikasi...';
+        await WP_Auth.loginUser(email, pass);
+        WP_UI.showToast('Login berhasil! Mengalihkan...', 'success');
+        setTimeout(() => window.location.href = 'index.html', 500);
+      } catch (err) {
+        WP_UI.showToast(err.message || 'Gagal masuk ke akun', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Masuk ke Akun';
+      }
+    }
+
+    async function handleRegisterSubmit(e) {
+      e.preventDefault();
+      const coupleName = document.getElementById('reg-couple-name').value;
+      const email = document.getElementById('reg-email').value;
+      const pass = document.getElementById('reg-password').value;
+      const btn = document.getElementById('btn-submit-register');
+
+      try {
+        btn.disabled = true;
+        btn.textContent = 'Mendaftarkan...';
+        const result = await WP_Auth.registerUser(email, pass, coupleName);
+
+        if (result && result.needsConfirmation) {
+          WP_UI.showToast(result.message, 'info');
+          switchAuthTab('login');
+        } else {
+          WP_UI.showToast('Pendaftaran berhasil! Mengalihkan...', 'success');
+          setTimeout(() => window.location.href = 'index.html', 600);
+        }
+      } catch (err) {
+        WP_UI.showToast(err.message || 'Gagal mendaftarkan akun', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Daftar & Mulai Rencana';
+      }
+    }
+
+    function handleQuickDemo() {
+      WP_Auth.startDemoSession();
+      WP_UI.showToast('Masuk sebagai Syfa & Ega', 'success');
+      setTimeout(() => window.location.href = 'index.html', 300);
+    }
+
+    // Initialize Auth state
+    document.addEventListener('DOMContentLoaded', () => {
+      WP_Auth.requireAuth();
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard — Wedding Planner</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/global.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/pages.css">
+</head>
+<body>
+
+  <div class="app-container">
+    <!-- Sidebar Navigation Placeholder -->
+    <div id="sidebar-container"></div>
+
+    <!-- Main Content Area -->
+    <div class="main-wrapper">
+      <!-- Top Header Bar -->
+      <div id="header-container"></div>
+
+      <!-- Main Dashboard Content -->
+      <main class="main-content">
+        <div class="dashboard-grid">
+
+          <!-- 1. Couple Profile Banner Card -->
+          <div class="couple-card">
+            <div class="couple-photo-wrapper">
+              <img id="couple-photo" src="assets/images/couple_kita.jpeg" alt="Foto Pasangan" class="couple-photo">
+            </div>
+            <div class="couple-details">
+              <h2 class="couple-names" id="couple-names">Syfa & Ega</h2>
+              <div class="couple-status-tag">
+                <span id="couple-status">❤️ Menuju hari bahagia</span>
+              </div>
+              <div class="couple-dates">
+                <div>Akad: <span id="couple-akad-date">7 Apr 2027</span></div>
+                <div>Resepsi: <span id="couple-resepsi-date">-</span></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 2. Countdown Hero Card -->
+          <div class="countdown-card">
+            <div class="countdown-header">
+              <div>
+                <div class="countdown-title">Hitung Mundur</div>
+                <div class="countdown-subtitle">Hari bahagia kami</div>
+              </div>
+              <div class="countdown-icon-badge">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              </div>
+            </div>
+
+            <div class="countdown-boxes">
+              <div class="countdown-box">
+                <div class="countdown-number" id="cd-days">00</div>
+                <div class="countdown-label">Hari</div>
+              </div>
+              <div class="countdown-box">
+                <div class="countdown-number" id="cd-hours">00</div>
+                <div class="countdown-label">Jam</div>
+              </div>
+              <div class="countdown-box">
+                <div class="countdown-number" id="cd-mins">00</div>
+                <div class="countdown-label">Menit</div>
+              </div>
+              <div class="countdown-box">
+                <div class="countdown-number" id="cd-secs">00</div>
+                <div class="countdown-label">Detik</div>
+              </div>
+            </div>
+
+            <div class="countdown-footer">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              <span id="cd-target-date">7 April 2027</span>
+            </div>
+          </div>
+
+          <!-- 3. Ringkasan Budget Card -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title-group">
+                <div class="card-title-icon">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                </div>
+                <div>
+                  <h3 class="card-title">Ringkasan Budget</h3>
+                  <p class="card-subtitle">Status penggunaan anggaran</p>
+                </div>
+              </div>
+              <a href="budget.html" class="card-action-link">Detail →</a>
+            </div>
+
+            <div class="budget-summary-content">
+              <!-- SVG Donut Chart -->
+              <div class="donut-chart-container">
+                <svg class="donut-svg" viewBox="0 0 160 160">
+                  <!-- Background green ring (Sisa Budget) -->
+                  <circle class="donut-circle-bg" cx="80" cy="80" r="60"></circle>
+                  <!-- Foreground pink/red ring (Terpakai) -->
+                  <circle class="donut-circle-value" id="donut-circle-value" cx="80" cy="80" r="60" stroke-dasharray="68 377"></circle>
+                </svg>
+                <div class="donut-center-info">
+                  <span class="donut-center-label" id="donut-center-label">Sisa Budget</span>
+                  <span class="donut-center-amount" id="donut-center-amount">Rp 41.150.000</span>
+                  <span class="donut-center-total" id="donut-center-total">TOTAL Rp 50.000.000</span>
+                </div>
+              </div>
+
+              <!-- Legend -->
+              <div class="budget-legend-list">
+                <div class="budget-legend-item">
+                  <div class="legend-label-group">
+                    <span class="legend-dot red"></span>
+                    <span class="legend-label">Terpakai</span>
+                  </div>
+                  <div class="legend-amount" id="budget-spent-amount">Rp 8.850.000 <span class="legend-percent">(18%)</span></div>
+                </div>
+                <div class="budget-legend-item">
+                  <div class="legend-label-group">
+                    <span class="legend-dot green"></span>
+                    <span class="legend-label">Sisa Budget</span>
+                  </div>
+                  <div class="legend-amount" id="budget-remaining-amount">Rp 41.150.000 <span class="legend-percent">(82%)</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 4. Hadiah dari Tamu Card -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title-group">
+                <div class="card-title-icon">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13"/><path d="M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5A4.8 8 0 0 1 12 8a4.8 8 0 0 1 4.5-5 2.5 2.5 0 0 1 0 5"/></svg>
+                </div>
+                <div>
+                  <h3 class="card-title">Hadiah dari Tamu</h3>
+                </div>
+              </div>
+              <a href="tamu-hadiah.html" class="card-action-link">Lihat Semua</a>
+            </div>
+
+            <div class="gift-card-content">
+              <div class="gift-stats-box">
+                <div class="gift-label">Total Hadiah</div>
+                <div class="gift-total-nominal" id="gift-total-amount">Rp 0</div>
+                <div class="gift-total-guests">Total Tamu: <span id="gift-total-guests" style="font-weight: 700; color: var(--text-heading);">0 Orang</span></div>
+              </div>
+              <div class="gift-illustration-box">
+                <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13"/><path d="M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5A4.8 8 0 0 1 12 8a4.8 8 0 0 1 4.5-5 2.5 2.5 0 0 1 0 5"/></svg>
+              </div>
+            </div>
+          </div>
+
+          <!-- 5. Prioritas Mendesak Card -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title-group">
+                <div class="card-title-icon" style="background: #FEE2E2; color: #DC2626;">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                </div>
+                <div>
+                  <h3 class="card-title">Prioritas Mendesak</h3>
+                  <p class="card-subtitle">Tugas & administrasi yang memerlukan perhatian segera</p>
+                </div>
+              </div>
+              <a href="persiapan.html" class="card-action-link">Semua Tugas →</a>
+            </div>
+
+            <div class="priority-list" id="priorities-list">
+              <!-- Rendered dynamically from JS -->
+            </div>
+          </div>
+
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- Supabase CDN Client -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- Scripts -->
+  <script src="js/utils.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/supabase.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/layout.js"></script>
+  <script src="js/dashboard.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      // Require authentication check
+      await WP_Auth.requireAuth();
+
+      // Render Layout initially
+      WP_Layout.renderSidebar('dashboard');
+      WP_Layout.renderHeader();
+
+      // Initialize Dashboard Components (live sync name, budget, countdown)
+      await WP_Dashboard.initDashboard();
+    });
+  </script>
+</body>
+</html>
+

@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tamu &amp; Hadiah — Wedding Planner</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/global.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/pages.css">
+</head>
+<body>
+
+<div class="app-container">
+  <!-- Sidebar -->
+  <div id="sidebar-container"></div>
+
+  <!-- Main -->
+  <div class="main-wrapper">
+    <div id="header-container"></div>
+
+    <main class="main-content">
+      <div style="display:flex; flex-direction:column; gap:20px;">
+
+        <!-- Page Header -->
+        <div style="display:flex; align-items:flex-start; justify-content:space-between; flex-wrap:wrap; gap:12px;">
+          <div>
+            <h2 style="font-size:1.5rem; font-weight:800; color:var(--text-heading); margin-bottom:4px;">Tamu &amp; Hadiah 🎟️</h2>
+            <p style="font-size:var(--font-size-xs); color:var(--text-muted);">Kelola undangan, RSVP, dan hadiah dari tamu dalam satu tempat.</p>
+          </div>
+          <button class="btn btn-primary" onclick="WP_Guests.openAddModal()">+ Tambah Tamu</button>
+        </div>
+
+        <!-- Summary Stats -->
+        <div class="seserahan-summary-bar">
+          <div class="seserahan-summary-item">
+            <div class="ses-sum-label">Total Tamu</div>
+            <div class="ses-sum-value" id="stat-total-tamu">0</div>
+          </div>
+          <div class="seserahan-summary-item">
+            <div class="ses-sum-label">Konfirmasi Hadir</div>
+            <div class="ses-sum-value green" id="stat-hadir">0</div>
+          </div>
+          <div class="seserahan-summary-item">
+            <div class="ses-sum-label">Belum Konfirmasi</div>
+            <div class="ses-sum-value yellow" id="stat-belum-konfirmasi">0</div>
+          </div>
+          <div class="seserahan-summary-item">
+            <div class="ses-sum-label">Total Hadiah</div>
+            <div class="ses-sum-value" id="stat-total-hadiah">Rp 0</div>
+          </div>
+        </div>
+
+        <!-- Filter & Search Bar -->
+        <div class="card" style="padding:16px 20px;">
+          <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+            <input
+              type="text"
+              class="form-control"
+              placeholder="🔍 Cari nama atau relasi tamu..."
+              oninput="WP_Guests.onSearchInput(this.value)"
+              style="flex:1; min-width:200px; max-width:340px;"
+            >
+            <select class="seserahan-filter-select" onchange="WP_Guests.onFilterChange(this.value)">
+              <option value="all">Semua Status RSVP</option>
+              <option value="hadir">Hadir</option>
+              <option value="tidak_hadir">Tidak Hadir</option>
+              <option value="pending">Belum Konfirmasi</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Guest Table -->
+        <div class="card" style="padding:0; overflow:hidden;">
+          <div class="card-header" style="padding:18px 22px 14px;">
+            <div>
+              <h3 class="card-title">Daftar Tamu</h3>
+              <p class="card-subtitle">Data tersinkron ke akun acara Anda.</p>
+            </div>
+          </div>
+          <div class="expense-table-wrapper">
+            <table class="expense-table">
+              <thead>
+                <tr>
+                  <th>Nama &amp; Relasi</th>
+                  <th>Undangan</th>
+                  <th>RSVP</th>
+                  <th>Hadiah</th>
+                  <th>Catatan</th>
+                  <th>Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="guest-table-body"></tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- Modal Tambah / Edit Tamu -->
+<div class="modal-overlay" id="guest-modal">
+  <div class="modal-dialog">
+    <div class="modal-header">
+      <h3 class="modal-title" id="guest-modal-title">Tambah Tamu</h3>
+      <button type="button" class="btn-table-action" onclick="WP_Guests.closeModal()">✕</button>
+    </div>
+    <form onsubmit="WP_Guests.saveGuest(event)">
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label" for="guest-name">Nama Tamu <span style="color:var(--primary)">*</span></label>
+          <input id="guest-name" class="form-control" placeholder="Contoh: Budi Santoso" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="guest-relation">Relasi / Keluarga</label>
+          <input id="guest-relation" class="form-control" placeholder="Contoh: Keluarga, Teman kampus, Rekan kerja">
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label" for="guest-invitation">Jenis Undangan</label>
+            <select id="guest-invitation" class="form-control">
+              <option value="digital">📱 Digital</option>
+              <option value="fisik">📄 Fisik</option>
+            </select>
+          </div>
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label" for="guest-rsvp">Status RSVP</label>
+            <select id="guest-rsvp" class="form-control">
+              <option value="pending">Belum Konfirmasi</option>
+              <option value="hadir">Hadir</option>
+              <option value="tidak_hadir">Tidak Hadir</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="guest-gift">Nominal Hadiah / Amplop (Rp) <span style="color:var(--text-muted); font-weight:400;">(Opsional)</span></label>
+          <input id="guest-gift" class="form-control" type="number" min="0" placeholder="Contoh: 500000">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="guest-notes">Catatan <span style="color:var(--text-muted); font-weight:400;">(Opsional)</span></label>
+          <input id="guest-notes" class="form-control" placeholder="Contoh: Perlu kursi roda, vegetarian, dsb.">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" id="btn-delete-guest"
+          class="btn btn-outline"
+          style="color:#DC2626; border-color:#FECACA; display:none;"
+          onclick="WP_Guests.deleteFromModal()">Hapus</button>
+        <div style="flex:1;"></div>
+        <button type="button" class="btn btn-outline" onclick="WP_Guests.closeModal()">Batal</button>
+        <button type="submit" class="btn btn-primary">Simpan</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/utils.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/supabase.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/layout.js"></script>
+<script src="js/tamu-hadiah.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', async () => {
+    await WP_Auth.requireAuth();
+    WP_Layout.renderSidebar('tamu');
+    await WP_Guests.initGuests();
+  });
+</script>
+</body>
+</html>

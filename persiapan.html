@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Peta Persiapan & Administrasi — Wedding Planner</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/global.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/pages.css">
+</head>
+<body>
+
+  <div class="app-container">
+    <!-- Sidebar Navigation Placeholder -->
+    <div id="sidebar-container"></div>
+
+    <!-- Main Content Area -->
+    <div class="main-wrapper">
+      <!-- Top Header Bar -->
+      <div id="header-container"></div>
+
+      <!-- Main Content -->
+      <main class="main-content">
+        <div class="persiapan-grid">
+
+          <!-- Page Header -->
+          <div class="page-header-title">
+            <h2>Administrasi & Peta Persiapan</h2>
+            <p>Pantau dan selesaikan setiap tahap persiapan pernikahanmu secara teratur.</p>
+          </div>
+
+          <!-- Top Stage Stepper Cards (RT/RW, Kelurahan, Puskesmas, KUA, Akad, Resepsi) -->
+          <div class="stage-stepper-container" id="stage-stepper-container">
+            <!-- Rendered dynamically by JS -->
+          </div>
+
+          <!-- Active Stage Card & Checklist (KUA — Pendaftaran Nikah) -->
+          <div class="stage-content-card">
+            <div class="stage-content-header">
+              <h3 class="stage-main-title" id="stage-main-title">KUA — Pendaftaran Nikah</h3>
+              <p class="stage-main-desc" id="stage-main-desc">Kelengkapan dokumen yang harus dibawa saat proses pendaftaran nikah di KUA.</p>
+            </div>
+
+            <!-- Documents Checklist Section -->
+            <div>
+              <div class="checklist-section-title">Dokumen yang Harus Dibawa</div>
+              <div class="checklist-items-list" id="checklist-items-list">
+                <!-- Checklist rows rendered dynamically by JS -->
+              </div>
+            </div>
+
+            <!-- Output Box: Keterangan yang Didapatkan -->
+            <div class="stage-result-box">
+              <div class="stage-result-label">Keterangan yang Didapatkan</div>
+              <div class="stage-result-content">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                <span id="stage-result-text">Jadwal Resmi KUA & Surat Rekomendasi</span>
+              </div>
+            </div>
+
+            <!-- Action Button: Tandai Selesai -->
+            <button type="button" class="btn-complete-stage" id="btn-complete-stage" onclick="WP_Persiapan.completeCurrentStage()">
+              <span>Tandai Selesai</span>
+            </button>
+          </div>
+
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- Supabase CDN Client -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- Scripts -->
+  <script src="js/utils.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/supabase.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/data-store.js"></script>
+  <script src="js/layout.js"></script>
+  <script src="js/persiapan.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      // Require authentication
+      await WP_Auth.requireAuth();
+
+      // Render Layout
+      WP_Layout.renderSidebar('persiapan');
+      WP_Layout.renderHeader();
+
+      // Initialize Peta Persiapan
+      await WP_Persiapan.initPersiapan();
+    });
+  </script>
+</body>
+</html>

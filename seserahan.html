@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Seserahan — Wedding Planner</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/global.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/pages.css">
+</head>
+<body>
+
+  <div class="app-container">
+    <!-- Sidebar Navigation -->
+    <div id="sidebar-container"></div>
+
+    <!-- Main Content Area -->
+    <div class="main-wrapper">
+      <!-- Top Header Bar -->
+      <div id="header-container"></div>
+
+      <!-- Main Content -->
+      <main class="main-content">
+        <div class="seserahan-page-container">
+
+          <!-- 1. Page Header + Action Button (Slide 5 Mockup) -->
+          <div class="seserahan-page-header">
+            <div>
+              <div class="page-header-title" style="margin-bottom: 0;">
+                <h2>Seserahan 🎁</h2>
+                <p>Catat dan pantau progres perlengkapan barang seserahan.</p>
+              </div>
+            </div>
+            <button type="button" class="btn btn-primary" onclick="WP_Seserahan.openAddItemModal('alat-ibadah')">
+              + Tambah Item
+            </button>
+          </div>
+
+          <!-- 2. Summary Bar (Ringkasan 4 angka) -->
+          <div class="seserahan-summary-bar">
+            <div class="seserahan-summary-item">
+              <div class="ses-sum-label">Item Selesai</div>
+              <div class="ses-sum-value green" id="ses-count-done">0 / 0 Item</div>
+            </div>
+            <div class="seserahan-summary-item">
+              <div class="ses-sum-label">Total Item</div>
+              <div class="ses-sum-value" id="ses-total-items">0 Item</div>
+            </div>
+            <div class="seserahan-summary-item">
+              <div class="ses-sum-label">Total Budget</div>
+              <div class="ses-sum-value" id="ses-total-budget">Rp 0</div>
+            </div>
+            <div class="seserahan-summary-item">
+              <div class="ses-sum-label">Total Terbeli</div>
+              <div class="ses-sum-value yellow" id="ses-total-spent">Rp 0</div>
+            </div>
+          </div>
+
+          <!-- 3. Filter + Category Label -->
+          <div class="flex items-center justify-between flex-wrap gap-3">
+            <h3 style="font-size: 1rem; font-weight: 700; color: var(--text-heading);">Daftar Seserahan</h3>
+            <div class="seserahan-filter-bar">
+              <select id="seserahan-filter-select" class="seserahan-filter-select" onchange="WP_Seserahan.onFilterChange(this.value)">
+                <option value="all">Semua Kategori</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- 4. Category Accordion List (Slide 5 Mockup) -->
+          <div id="seserahan-categories-container" style="display: flex; flex-direction: column; gap: 12px;">
+            <!-- Rendered dynamically by JS -->
+          </div>
+
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- Modal Tambah / Edit Item Seserahan -->
+  <div class="modal-overlay" id="modal-add-item">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 class="modal-title" id="modal-item-title">Tambah Item Seserahan</h3>
+        <button type="button" class="btn-table-action" onclick="WP_Seserahan.closeItemModal()">✕</button>
+      </div>
+      <form onsubmit="WP_Seserahan.handleItemModalSubmit(event)">
+        <div class="modal-body">
+          <!-- Hidden category field -->
+          <input type="hidden" id="item-modal-cat">
+
+          <div class="form-group">
+            <label class="form-label" for="item-modal-name">Nama Item</label>
+            <input type="text" id="item-modal-name" class="form-control" placeholder="Contoh: Al-Qur'an Premium, Parfum Chanel" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="item-modal-price">Harga / Realisasi (Rp) <span style="color: var(--text-muted); font-weight: 400;">(Opsional)</span></label>
+            <input type="number" id="item-modal-price" class="form-control" placeholder="Contoh: 250000" min="0">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="item-modal-link">Link Pembelian <span style="color: var(--text-muted); font-weight: 400;">(Opsional)</span></label>
+            <input type="url" id="item-modal-link" class="form-control" placeholder="https://tokopedia.com/...">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" style="color: var(--status-red-text); border-color: var(--status-red-bg);" onclick="WP_Seserahan.handleDeleteItem()" id="btn-delete-item">
+            Hapus
+          </button>
+          <div style="flex: 1;"></div>
+          <button type="button" class="btn btn-outline" onclick="WP_Seserahan.closeItemModal()">Batal</button>
+          <button type="submit" class="btn btn-primary">Simpan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Supabase CDN Client -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- Scripts -->
+  <script src="js/utils.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/supabase.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/data-store.js"></script>
+  <script src="js/layout.js"></script>
+  <script src="js/seserahan.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      await WP_Auth.requireAuth();
+      WP_Layout.renderSidebar('seserahan');
+      WP_Layout.renderHeader();
+      await WP_Seserahan.initSeserahan();
+    });
+  </script>
+</body>
+</html>

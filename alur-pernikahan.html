@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Alur Pernikahan — Wedding Planner</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/global.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/pages.css">
+</head>
+<body>
+
+  <div class="app-container">
+    <!-- Sidebar Navigation -->
+    <div id="sidebar-container"></div>
+
+    <!-- Main Content Area -->
+    <div class="main-wrapper">
+      <!-- Top Header Bar -->
+      <div id="header-container"></div>
+
+      <!-- Main Content -->
+      <main class="main-content">
+        <div class="alur-page-container">
+
+          <!-- Page Header -->
+          <div class="page-header-title">
+            <h2>Alur Pernikahan 📖</h2>
+            <p>Panduan alur proses pernikahan dari awal hingga hari bahagia.</p>
+          </div>
+
+          <!-- Vertical Two-Track Timeline Container (Slide 3 Mockup) -->
+          <div class="alur-timeline-wrapper" id="alur-timeline-container">
+            <!-- Rendered dynamically by JS -->
+          </div>
+
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- Supabase CDN Client -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- Scripts -->
+  <script src="js/utils.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/supabase.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/layout.js"></script>
+  <script src="js/alur-pernikahan.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      // Require authentication
+      await WP_Auth.requireAuth();
+
+      // Render Layout
+      WP_Layout.renderSidebar('alur');
+      WP_Layout.renderHeader();
+
+      // Initialize Alur Pernikahan
+      await WP_Alur.initAlurPernikahan();
+    });
+  </script>
+</body>
+</html>
+

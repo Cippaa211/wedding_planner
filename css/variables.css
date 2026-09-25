@@ -1,0 +1,78 @@
+:root {
+  /* Brand Colors */
+  --primary: #E11D48;
+  --primary-hover: #BE123C;
+  --primary-light: #FFF0F3;
+  --primary-border: #FFE4E8;
+  --primary-gradient: linear-gradient(135deg, #B91C43 0%, #9F1239 100%);
+  --countdown-bg: #AE173E;
+  --countdown-box-bg: rgba(255, 255, 255, 0.12);
+  --countdown-box-border: rgba(255, 255, 255, 0.18);
+
+  /* Secondary & Accents */
+  --accent-pink: #FB7185;
+  --accent-rose-soft: #FFF5F7;
+  --accent-peach: #FFEDD5;
+  --accent-purple: #8B5CF6;
+  --accent-yellow: #F59E0B;
+  --accent-green: #10B981;
+  --accent-teal: #14B8A6;
+  --accent-cyan: #06B6D4;
+
+  /* Status Colors */
+  --status-gray-bg: #F1F5F9;
+  --status-gray-text: #64748B;
+  --status-yellow-bg: #FEF3C7;
+  --status-yellow-text: #D97706;
+  --status-green-bg: #DCFCE7;
+  --status-green-text: #16A34A;
+  --status-red-bg: #FEE2E2;
+  --status-red-text: #DC2626;
+
+  /* Surfaces & Backgrounds */
+  --bg-app: #F8F9FA;
+  --bg-sidebar: #FFFFFF;
+  --bg-card: #FFFFFF;
+  --bg-card-subtle: #FAF9F9;
+  --bg-input: #FFFFFF;
+
+  /* Text Colors */
+  --text-main: #1E293B;
+  --text-heading: #0F172A;
+  --text-muted: #64748B;
+  --text-light: #94A3B8;
+  --text-white: #FFFFFF;
+
+  /* Borders & Shadows */
+  --border-color: #F1F5F9;
+  --border-light: #F8FAFC;
+  --border-subtle: rgba(0, 0, 0, 0.05);
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.03);
+  --shadow-card: 0 4px 20px -2px rgba(148, 163, 184, 0.08), 0 2px 6px -1px rgba(148, 163, 184, 0.04);
+  --shadow-hover: 0 10px 25px -3px rgba(148, 163, 184, 0.12), 0 4px 10px -2px rgba(148, 163, 184, 0.06);
+  --shadow-primary: 0 8px 20px -4px rgba(225, 29, 72, 0.35);
+
+  /* Radii */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --radius-xl: 24px;
+  --radius-full: 9999px;
+
+  /* Typography */
+  --font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-size-xs: 0.75rem;    /* 12px */
+  --font-size-sm: 0.875rem;   /* 14px */
+  --font-size-base: 1rem;     /* 16px */
+  --font-size-lg: 1.125rem;   /* 18px */
+  --font-size-xl: 1.25rem;    /* 20px */
+  --font-size-2xl: 1.5rem;    /* 24px */
+  --font-size-3xl: 1.875rem;  /* 30px */
+
+  /* Layout */
+  --sidebar-width: 260px;
+  --header-height: 72px;
+  --content-max-width: 1200px;
+  --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+

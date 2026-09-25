@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Akad &amp; Resepsi — Wedding Planner</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/global.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/pages.css">
+</head>
+<body>
+
+<div class="app-container">
+  <div id="sidebar-container"></div>
+
+  <div class="main-wrapper">
+    <div id="header-container"></div>
+
+    <main class="main-content">
+      <div style="display:flex; flex-direction:column; gap:20px;">
+
+        <!-- Page Header -->
+        <div style="display:flex; align-items:flex-start; justify-content:space-between; flex-wrap:wrap; gap:12px;">
+          <div>
+            <h2 style="font-size:1.5rem; font-weight:800; color:var(--text-heading); margin-bottom:4px;">Akad &amp; Resepsi 💍</h2>
+            <p style="font-size:var(--font-size-xs); color:var(--text-muted);">Checklist operasional hari-H per sesi. Centang setiap tugas yang sudah selesai.</p>
+          </div>
+          <button class="btn btn-primary" onclick="WP_Event.openAddModal('pra')">+ Tambah Tugas</button>
+        </div>
+
+        <!-- Summary Stats -->
+        <div class="seserahan-summary-bar">
+          <div class="seserahan-summary-item">
+            <div class="ses-sum-label">Total Tugas</div>
+            <div class="ses-sum-value" id="ev-stat-total">0 Tugas</div>
+          </div>
+          <div class="seserahan-summary-item">
+            <div class="ses-sum-label">Selesai</div>
+            <div class="ses-sum-value green" id="ev-stat-done">0 Selesai</div>
+          </div>
+          <div class="seserahan-summary-item">
+            <div class="ses-sum-label">Belum</div>
+            <div class="ses-sum-value yellow" id="ev-stat-remaining">0 Belum</div>
+          </div>
+          <div class="seserahan-summary-item">
+            <div class="ses-sum-label">Progres</div>
+            <div class="ses-sum-value" id="ev-stat-pct">0%</div>
+          </div>
+        </div>
+
+        <!-- Progress Bar -->
+        <div class="card" style="padding:18px 22px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <span style="font-size:var(--font-size-xs); font-weight:700; color:var(--text-heading);">Progress Keseluruhan</span>
+            <span style="font-size:var(--font-size-xs); color:var(--text-muted);" id="ev-progress-label">0 dari 0 tugas selesai</span>
+          </div>
+          <div style="background:var(--bg-card-subtle); border-radius:var(--radius-full); height:10px; overflow:hidden;">
+            <div id="ev-progress-bar" style="height:100%; background:linear-gradient(90deg, var(--primary), #FB7185); border-radius:var(--radius-full); width:0%; transition:width 0.4s ease;"></div>
+          </div>
+        </div>
+
+        <!-- Session Cards -->
+        <div id="event-sessions-container" style="display:flex; flex-direction:column; gap:16px;">
+          <!-- Rendered by JS -->
+        </div>
+
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- Modal Tambah / Edit Tugas -->
+<div class="modal-overlay" id="task-modal">
+  <div class="modal-dialog">
+    <div class="modal-header">
+      <h3 class="modal-title" id="task-modal-title">Tambah Tugas</h3>
+      <button type="button" class="btn-table-action" onclick="WP_Event.closeTaskModal()">✕</button>
+    </div>
+    <form id="task-form" onsubmit="WP_Event.saveTask(event)">
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label" for="task-title">Nama Tugas <span style="color:var(--primary)">*</span></label>
+          <input id="task-title" class="form-control" placeholder="Contoh: Cek sound system dan pencahayaan" required>
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label" for="task-session">Sesi</label>
+            <select id="task-session" class="form-control">
+              <option value="pra">🌅 Pra-Akad</option>
+              <option value="akad">💍 Akad Nikah</option>
+              <option value="resepsi">🎉 Resepsi</option>
+              <option value="pasca">✅ Pasca Acara</option>
+            </select>
+          </div>
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label" for="task-time">Waktu</label>
+            <input id="task-time" class="form-control" type="time" placeholder="08:00">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="task-pic">Penanggung Jawab (PIC)</label>
+          <input id="task-pic" class="form-control" placeholder="Contoh: WO, Panitia, Catering, WCC">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" id="btn-delete-task"
+          class="btn btn-outline"
+          style="color:#DC2626; border-color:#FECACA; display:none;"
+          onclick="WP_Event.deleteTask()">Hapus</button>
+        <div style="flex:1;"></div>
+        <button type="button" class="btn btn-outline" onclick="WP_Event.closeTaskModal()">Batal</button>
+        <button type="submit" class="btn btn-primary">Simpan</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/utils.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/supabase.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/layout.js"></script>
+<script src="js/akad-resepsi.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', async () => {
+    await WP_Auth.requireAuth();
+    WP_Layout.renderSidebar('akad');
+    await WP_Event.initEvent();
+  });
+</script>
+</body>
+</html>
