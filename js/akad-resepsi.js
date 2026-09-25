@@ -54,15 +54,15 @@ const DEFAULT_ENGAGEMENT_TASKS = [
 
 const SESSIONS = [
   { id: 'pra', label: '🌅 Pra-Akad', color: '#7C3AED' },
-  { id: 'akad', label: '💍 Akad Nikah', color: '#E11D48' },
-  { id: 'resepsi', label: '🎉 Resepsi', color: '#0EA5E9' },
+  { id: 'akad', label: '💍 Akad Nikah', color: '#2563EB' },
+  { id: 'resepsi', label: '🎉 Resepsi', color: '#D97706' },
   { id: 'pasca', label: '✅ Pasca Acara', color: '#16A34A' }
 ];
 
 const ENGAGEMENT_SESSIONS = [
   { id: 'pra', label: '🌅 Pra-Acara Lamaran', color: '#7C3AED' },
-  { id: 'akad', label: '💐 Prosesi Lamaran', color: '#E11D48' },
-  { id: 'resepsi', label: '🍽️ Ramah Tamah & Foto', color: '#0EA5E9' },
+  { id: 'akad', label: '💐 Prosesi Lamaran', color: '#2563EB' },
+  { id: 'resepsi', label: '🍽️ Ramah Tamah & Foto', color: '#D97706' },
   { id: 'pasca', label: '✅ Pasca Acara', color: '#16A34A' }
 ];
 

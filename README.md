@@ -126,8 +126,9 @@ Dashboard tidak dipisah menjadi file terpisah, melainkan menyesuaikan konten ber
 
 ### Gaya Visual
 
-- Aksen merah muda/merah (`#E11D48`) untuk tombol utama, menu aktif, dan informasi penting.
-- Latar putih atau merah muda sangat pucat agar konten mudah dibaca.
+- Aksen biru (`#2563EB`) untuk tombol utama, menu aktif, dan informasi penting.
+- Merah (`#DC2626`) hanya untuk status bahaya: badge *Mendesak*/*Tidak Hadir*, tombol Hapus & Keluar, dan pesan error.
+- Latar putih atau biru sangat pucat agar konten mudah dibaca.
 - Kartu putih bersudut membulat (`border-radius: 16–24px`), bayangan lembut, chip status, tombol kapsul, checkbox, dan donut chart SVG.
 - Tipografi: **Plus Jakarta Sans** (Google Fonts).
 

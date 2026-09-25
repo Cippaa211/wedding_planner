@@ -129,7 +129,7 @@ function renderHeader() {
         </button>
         <div class="header-user-menu" id="header-user-menu">
           <div class="user-avatar" onclick="WP_Layout.toggleUserMenu(event)" title="Akun & Profil">
-            <img src="${escapeHtml(data.couple.photoUrl || 'assets/images/couple_kita.jpeg')}" alt="Avatar" onerror="this.onerror=null; this.src='data:image/svg+xml;utf8,<svg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'40\\' height=\\'40\\' viewBox=\\'0 0 24 24\\' fill=\\'none\\' stroke=\\'%23E11D48\\' stroke-width=\\'2\\' stroke-linecap=\\'round\\' stroke-linejoin=\\'round\\'><circle cx=\\'12\\' cy=\\'8\\' r=\\'5\\'/>  <path d=\\'M20 21a8 8 0 0 0-16 0\\'/></svg>';">
+            <img src="${escapeHtml(data.couple.photoUrl || 'assets/images/couple_kita.jpeg')}" alt="Avatar" onerror="this.onerror=null; this.src='data:image/svg+xml;utf8,<svg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'40\\' height=\\'40\\' viewBox=\\'0 0 24 24\\' fill=\\'none\\' stroke=\\'%232563EB\\' stroke-width=\\'2\\' stroke-linecap=\\'round\\' stroke-linejoin=\\'round\\'><circle cx=\\'12\\' cy=\\'8\\' r=\\'5\\'/>  <path d=\\'M20 21a8 8 0 0 0-16 0\\'/></svg>';">
           </div>
           <div class="user-dropdown" id="user-dropdown">
             <div class="user-dropdown-info">

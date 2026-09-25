@@ -17,7 +17,7 @@ const CATEGORY_STYLES = {
   'Venue/Lokasi':       { color: '#F59E0B', badge: 'badge-cat-venue' },
   'Akad':               { color: '#8B5CF6', badge: 'badge-cat-akad' },
   'Resepsi':            { color: '#0EA5E9', badge: 'badge-cat-resepsi' },
-  'Dokumentasi':        { color: '#E11D48', badge: 'badge-cat-dokumentasi' },
+  'Dokumentasi':        { color: '#2563EB', badge: 'badge-cat-dokumentasi' },
   'Seserahan':          { color: '#EC4899', badge: 'badge-cat-seserahan' },
   'Hantaran/Seserahan': { color: '#EC4899', badge: 'badge-cat-seserahan' },
   'MUA':                { color: '#6366F1', badge: 'badge-cat-mua' },

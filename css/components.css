@@ -424,7 +424,7 @@
 }
 
 .btn-secondary:hover {
-  background-color: #FED7E2;
+  background-color: #BFDBFE;
 }
 
 .btn-outline {
@@ -597,9 +597,9 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background-color: var(--primary-light, #FFF1F2);
-  color: var(--primary, #E11D48);
-  border: 1px solid rgba(225, 29, 72, 0.2);
+  background-color: var(--primary-light, #EFF6FF);
+  color: var(--primary, #2563EB);
+  border: 1px solid rgba(37, 99, 235, 0.2);
   padding: 4px 10px;
   border-radius: 9999px;
   font-size: 0.8rem;
@@ -610,10 +610,10 @@
 }
 
 .btn-event-switcher:hover {
-  background-color: var(--primary, #E11D48);
+  background-color: var(--primary, #2563EB);
   color: #ffffff;
-  border-color: var(--primary, #E11D48);
-  box-shadow: 0 2px 8px rgba(225, 29, 72, 0.25);
+  border-color: var(--primary, #2563EB);
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
 }
 
 
