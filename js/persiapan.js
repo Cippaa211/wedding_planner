@@ -210,9 +210,14 @@ const DEFAULT_ENGAGEMENT_STAGES = [
   }
 ];
 
-let currentStageId = 'kua';
-let currentStageId = 'rt_rw';
+let currentStageId = null;
 let stagesData = [];
+
+function escapeHtml(value) {
+  return String(value ?? '').replace(/[&<>"']/g, char => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[char]));
+}
 
 /**
  * Initialize Peta Persiapan
@@ -225,14 +230,12 @@ async function initPersiapan() {
   const pageTitleEl = document.querySelector('.page-header-title h2');
   const pageDescEl = document.querySelector('.page-header-title p');
   if (pageTitleEl) {
-    pageTitleEl.textContent = 'Peta Persiapan';
-    pageTitleEl.textContent = 'Administrasi & Peta Persiapan';
+    pageTitleEl.textContent = eventType === 'engagement' ? 'Peta Persiapan Lamaran' : 'Administrasi & Peta Persiapan';
   }
   if (pageDescEl) {
-    pageDescEl.textContent = eventType === 'engagement' 
-      ? 'Peta Persiapan Lamaran — Pantau dan selesaikan setiap tahapan persiapan acara lamaranmu.' 
-      : 'Administrasi & Peta Persiapan Pernikahan — Pantau dan selesaikan setiap tahap persiapan pernikahanmu secara teratur.';
-    pageDescEl.textContent = 'Alur pengurusan dokumen resmi KUA dan tahapan persiapan nikah.';
+    pageDescEl.textContent = eventType === 'engagement'
+      ? 'Pantau dan selesaikan setiap tahapan persiapan acara lamaranmu.'
+      : 'Alur pengurusan dokumen resmi KUA dan tahapan persiapan nikah.';
   }
 
   await loadStagesData();
@@ -245,28 +248,25 @@ async function initPersiapan() {
  */
 async function loadStagesData() {
   const eventType = WP_Utils.getEventType();
-  const storageKey = eventType === 'engagement' ? 'wp_checklist_engagement' : WP_Utils.STORAGE_KEYS.CHECKLIST_KUA;
-  const saved = await WP_DataStore.loadPageState(storageKey, null);
+  // Key otomatis diberi prefix engagement_ oleh WP_DataStore bila event_type = engagement
   const saved = await WP_DataStore.loadPageState(WP_Utils.STORAGE_KEYS.CHECKLIST_KUA, null);
-  
+
   if (saved && Array.isArray(saved) && saved.length > 0) {
     stagesData = saved;
   } else {
-    stagesData = eventType === 'engagement' ? DEFAULT_ENGAGEMENT_STAGES : DEFAULT_STAGES;
-    stagesData = DEFAULT_STAGES;
+    const defaults = eventType === 'engagement' ? DEFAULT_ENGAGEMENT_STAGES : DEFAULT_STAGES;
+    stagesData = JSON.parse(JSON.stringify(defaults));
     saveStagesData();
   }
 
   if (!stagesData.some(s => s.id === currentStageId)) {
-    currentStageId = stagesData[0]?.id || 'keluarga';
-    currentStageId = stagesData[0]?.id || 'rt_rw';
+    // Buka tahap pertama yang belum selesai
+    const firstPending = stagesData.find(s => s.status !== 'selesai');
+    currentStageId = (firstPending || stagesData[0])?.id || null;
   }
 }
 
 function saveStagesData() {
-  const eventType = WP_Utils.getEventType();
-  const storageKey = eventType === 'engagement' ? 'wp_checklist_engagement' : WP_Utils.STORAGE_KEYS.CHECKLIST_KUA;
-  return WP_DataStore.savePageState(storageKey, stagesData);
   return WP_DataStore.savePageState(WP_Utils.STORAGE_KEYS.CHECKLIST_KUA, stagesData);
 }
 
@@ -357,7 +357,7 @@ function renderActiveStageChecklist() {
         <div class="checklist-custom-box">
           ${item.completed ? '✓' : ''}
         </div>
-        <span class="checklist-text">${item.text}</span>
+        <span class="checklist-text">${escapeHtml(item.text)}</span>
       </div>
     </div>
   `).join('');
@@ -416,8 +416,20 @@ function completeCurrentStage() {
   renderActiveStageChecklist();
 }
 
+/**
+ * Data tahapan untuk halaman lain (mis. Prioritas Dashboard): tersimpan atau default,
+ * tanpa menyimpan dan tanpa mengubah state halaman Peta Persiapan.
+ */
+async function getStagesSnapshot() {
+  const saved = await WP_DataStore.loadPageState(WP_Utils.STORAGE_KEYS.CHECKLIST_KUA, null);
+  if (Array.isArray(saved) && saved.length > 0) return saved;
+  const defaults = WP_Utils.getEventType() === 'engagement' ? DEFAULT_ENGAGEMENT_STAGES : DEFAULT_STAGES;
+  return JSON.parse(JSON.stringify(defaults));
+}
+
 window.WP_Persiapan = {
   initPersiapan,
+  getStagesSnapshot,
   selectStage,
   toggleChecklistItem,
   completeCurrentStage

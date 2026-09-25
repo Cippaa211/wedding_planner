@@ -11,36 +11,64 @@ async function initDashboard() {
   // 2. Re-render Header with updated names
   WP_Layout.renderHeader();
 
-  // 3. Render Dashboard sections
+  // 3. Data per event_type: mulai dari data lokal, lalu ditimpa data Supabase bila tersedia
+  const eventType = WP_Utils.getEventType(data);
+  const view = {
+    eventType,
+    totalBudget: WP_Utils.getTotalBudget(data, eventType),
+    expenses: getLocalExpenses(data, eventType),
+    guests: WP_Utils.getStorage(WP_Utils.getScopedStorageKey(WP_Utils.STORAGE_KEYS.GUESTS, eventType)) || [],
+    stages: await WP_Persiapan.getStagesSnapshot()
+  };
+
   loadCoupleProfile(data.couple);
   startCountdown(data.couple.akadDate);
-  renderBudgetSummary(data.budget);
-  renderGiftsSummary(data.gifts);
-  renderPriorities(data.priorities);
+  renderDataSections(view);
 
-  // 4. Fetch live budget & gifts from Supabase if connected
-  await fetchLiveSupabaseData(data);
+  // 4. Fetch live budget & guests from Supabase if connected
+  if (await fetchLiveSupabaseData(view)) renderDataSections(view);
+}
+
+function renderDataSections(view) {
+  renderBudgetSummary({ totalBudget: view.totalBudget, expenses: view.expenses });
+  renderGiftsSummary(summarizeGifts(view.guests));
+  renderPriorities(buildPriorities(view));
+}
+
+function getLocalExpenses(data, eventType) {
+  const saved = WP_Utils.getStorage(WP_Utils.getScopedStorageKey(WP_Utils.STORAGE_KEYS.EXPENSES, eventType));
+  if (Array.isArray(saved)) return saved;
+  // Contoh pengeluaran bawaan hanya untuk Wedding
+  return eventType === 'wedding' ? (data.budget.expenses || []) : [];
 }
 
 /**
- * Fetch live data from Supabase if available
+ * Fetch live data from Supabase if available. Mengembalikan true bila view diperbarui.
  */
-async function fetchLiveSupabaseData(localData) {
+async function fetchLiveSupabaseData(view) {
   const client = WP_Supabase.getClient();
-  if (!WP_Supabase.isConfigured() || !client) return;
+  if (!WP_Supabase.isConfigured() || !client) return false;
 
   const session = WP_Auth.getCurrentSession();
-  if (!session || !session.eventId) return;
+  if (!session || !session.eventId) return false;
 
+  let updated = false;
   try {
-    // 1. Fetch live budget items
-    const { data: expenses } = await client
-      .from('budget_items')
-      .select('*')
-      .eq('event_id', session.eventId);
+    const [{ data: expenses }, { data: guests }] = await Promise.all([
+      client
+        .from('budget_items')
+        .select('*')
+        .eq('event_id', session.eventId)
+        .eq('event_type', view.eventType),
+      client
+        .from('guests')
+        .select('gift_amount, rsvp_status')
+        .eq('event_id', session.eventId)
+        .eq('event_type', view.eventType)
+    ]);
 
-    if (expenses && expenses.length > 0) {
-      localData.budget.expenses = expenses.map(e => ({
+    if (expenses) {
+      view.expenses = expenses.map(e => ({
         id: e.id,
         name: e.name,
         category: e.category,
@@ -48,25 +76,23 @@ async function fetchLiveSupabaseData(localData) {
         status: e.payment_status,
         date: e.expense_date
       }));
-      renderBudgetSummary(localData.budget);
+      updated = true;
     }
-
-    // 2. Fetch live gifts
-    const { data: guests } = await client
-      .from('guests')
-      .select('gift_amount')
-      .eq('event_id', session.eventId);
-
-    if (guests && guests.length > 0) {
-      const totalAmount = guests.reduce((sum, g) => sum + (Number(g.gift_amount) || 0), 0);
-      const giftGuestsCount = guests.filter(g => Number(g.gift_amount) > 0).length;
-      localData.gifts.totalAmount = totalAmount;
-      localData.gifts.totalGuests = giftGuestsCount;
-      renderGiftsSummary(localData.gifts);
+    if (guests) {
+      view.guests = guests;
+      updated = true;
     }
   } catch (err) {
     console.warn('Live fetch note:', err);
   }
+  return updated;
+}
+
+function summarizeGifts(guests) {
+  return {
+    totalAmount: guests.reduce((sum, g) => sum + (Number(g.gift_amount) || 0), 0),
+    totalGuests: guests.filter(g => Number(g.gift_amount) > 0).length
+  };
 }
 
 /**
@@ -88,20 +114,16 @@ function loadCoupleProfile(couple) {
     } else {
       coupleStatusEl.textContent = couple.status || '❤️ Menuju hari bahagia';
     }
-    coupleStatusEl.textContent = couple.status || '❤️ Menuju hari bahagia';
   }
-  
+
   if (coupleAkadDateEl) {
     const parentNode = coupleAkadDateEl.parentElement;
-    if (parentNode) {
-      const labelText = eventType === 'engagement' ? 'Acara Lamaran: ' : 'Akad: ';
-      if (parentNode.childNodes[0]) parentNode.childNodes[0].textContent = labelText;
     if (parentNode && parentNode.childNodes[0]) {
-      parentNode.childNodes[0].textContent = 'Akad: ';
+      parentNode.childNodes[0].textContent = eventType === 'engagement' ? 'Acara Lamaran: ' : 'Akad: ';
     }
     coupleAkadDateEl.textContent = WP_Utils.formatShortDate(couple.akadDate);
   }
-  
+
   if (coupleResepsiDateEl) {
     const parentNode = coupleResepsiDateEl.parentElement;
     if (parentNode) {
@@ -111,8 +133,6 @@ function loadCoupleProfile(couple) {
         parentNode.style.display = 'block';
         if (parentNode.childNodes[0]) parentNode.childNodes[0].textContent = 'Resepsi: ';
       }
-      parentNode.style.display = 'block';
-      if (parentNode.childNodes[0]) parentNode.childNodes[0].textContent = 'Resepsi: ';
     }
     coupleResepsiDateEl.textContent = couple.resepsiDate ? WP_Utils.formatShortDate(couple.resepsiDate) : '-';
   }
@@ -138,7 +158,6 @@ function startCountdown(targetDate) {
   const cdSubtitleEl = document.querySelector('.countdown-subtitle');
   if (cdSubtitleEl) {
     cdSubtitleEl.textContent = eventType === 'engagement' ? 'Acara Lamaran / Engagement kami' : 'Hari bahagia pernikahan kami';
-    cdSubtitleEl.textContent = 'Hari bahagia pernikahan kami';
   }
 
   if (targetDateEl) {
@@ -164,12 +183,7 @@ function renderBudgetSummary(budget) {
   const totalBudget = budget.totalBudget || 50000000;
   
   // Calculate total spent from expenses
-  let totalSpent = 0;
-  if (budget.expenses && budget.expenses.length > 0) {
-    totalSpent = budget.expenses.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
-  } else {
-    totalSpent = budget.totalExpenses || 8850000;
-  }
+  const totalSpent = (budget.expenses || []).reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
 
   const remainingBudget = Math.max(0, totalBudget - totalSpent);
   const spentPercent = totalBudget > 0 ? Math.round((totalSpent / totalBudget) * 100) : 0;
@@ -221,23 +235,67 @@ function renderGiftsSummary(gifts) {
 }
 
 /**
- * 5. Render Priorities List
+ * 5. Prioritas Mendesak — disusun dari data nyata:
+ *    - Checklist Peta Persiapan yang belum selesai (tahap aktif = urgent, tahap berikutnya = warning)
+ *    - Pengeluaran berstatus "Belum bayar" / "DP" (warning)
+ *    - Tamu yang belum konfirmasi RSVP (info)
  */
+const MAX_PRIORITIES = 5;
+const PRIORITY_RANK = { urgent: 0, warning: 1, info: 2 };
+
+function buildPriorities({ stages, expenses, guests }) {
+  // Checklist: dua tahap pertama yang belum selesai
+  const pendingStages = (stages || []).filter(s => s.status !== 'selesai').slice(0, 2);
+  const checklist = pendingStages.flatMap((stage, idx) =>
+    stage.items
+      .filter(item => !item.completed)
+      .map(item => ({
+        title: item.text,
+        sub: `Peta Persiapan • ${stage.name}`,
+        status: idx === 0 ? 'urgent' : 'warning'
+      }))
+  );
+
+  // Budget: yang belum dibayar sama sekali didahulukan dari DP
+  const unpaid = (expenses || [])
+    .filter(e => e.status === 'Belum bayar' || e.status === 'DP')
+    .sort((a, b) => (a.status === 'Belum bayar' ? 0 : 1) - (b.status === 'Belum bayar' ? 0 : 1))
+    .map(e => ({
+      title: `${e.status === 'DP' ? 'Pelunasan' : 'Pembayaran'} ${e.name}`,
+      sub: `Budget • ${e.category || 'Lain-lain'} • ${WP_Utils.formatRupiah(e.amount)} (${e.status})`,
+      status: 'warning'
+    }));
+
+  const pendingRsvp = (guests || []).filter(g => (g.rsvp_status || 'pending') === 'pending').length;
+  const rsvp = pendingRsvp > 0
+    ? [{ title: `${pendingRsvp} tamu belum konfirmasi kehadiran`, sub: 'Tamu & Hadiah • RSVP', status: 'info' }]
+    : [];
+
+  // Setiap sumber mendapat tempat (RSVP 1, budget maks 2), checklist mengisi sisa slot,
+  // lalu slot yang masih kosong diisi sisa pembayaran
+  const rsvpSlots = rsvp.slice(0, 1);
+  const paymentSlots = unpaid.slice(0, 2);
+  const checklistSlots = checklist.slice(0, MAX_PRIORITIES - rsvpSlots.length - paymentSlots.length);
+  const picked = [...checklistSlots, ...paymentSlots, ...rsvpSlots];
+  const extraPayments = unpaid.slice(2, 2 + (MAX_PRIORITIES - picked.length));
+
+  return [...picked, ...extraPayments]
+    .sort((a, b) => PRIORITY_RANK[a.status] - PRIORITY_RANK[b.status]);
+}
+
 function renderPriorities(priorities) {
   const prioritiesContainer = document.getElementById('priorities-list');
   if (!prioritiesContainer) return;
 
-  const eventType = WP_Utils.getEventType();
-  const listToRender = (eventType === 'engagement') 
-    ? (WP_Utils.DEFAULT_ENGAGEMENT_PRIORITIES || priorities)
-    : (priorities || WP_Utils.DEFAULT_WEDDING_DATA.priorities);
-  const listToRender = priorities || WP_Utils.DEFAULT_WEDDING_DATA.priorities;
+  const listToRender = priorities.length > 0
+    ? priorities
+    : [{ title: 'Semua tugas & pembayaran sudah beres 🎉', sub: 'Tidak ada yang perlu segera ditindaklanjuti', status: 'done' }];
 
   prioritiesContainer.innerHTML = listToRender.map(item => `
     <div class="priority-item">
       <div>
-        <div class="priority-title">${item.title}</div>
-        <div class="priority-sub">${item.sub}</div>
+        <div class="priority-title">${escapeHtml(item.title)}</div>
+        <div class="priority-sub">${escapeHtml(item.sub)}</div>
       </div>
       <span class="badge ${getBadgeClass(item.status)}">${getBadgeText(item.status)}</span>
     </div>
@@ -271,5 +329,6 @@ window.WP_Dashboard = {
   startCountdown,
   renderBudgetSummary,
   renderGiftsSummary,
+  buildPriorities,
   renderPriorities
 };

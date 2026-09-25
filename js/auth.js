@@ -14,40 +14,31 @@ function clearSession() {
   localStorage.removeItem(WP_Utils.STORAGE_KEYS.SESSION);
 }
 
+/**
+ * Arahkan ke halaman lain dan jangan pernah resolve, sehingga pemanggil yang
+ * melakukan `await requireAuth()` berhenti dan tidak merender halaman yang ditinggalkan.
+ */
+function redirectTo(url) {
+  window.location.href = url;
+  return new Promise(() => {});
+}
+
 async function requireAuth() {
   const isLoginPage = window.location.pathname.endsWith('login.html');
   const localSession = getCurrentSession();
   if (localSession?.authProvider === 'local') {
-    if (isLoginPage) {
-      window.location.href = 'index.html';
-      return localSession;
-    }
+    if (isLoginPage) return redirectTo('index.html');
     return localSession;
   }
   const client = WP_Supabase.getClient();
 
-  if (WP_Supabase.isConfigured() && client) {
-    const { data: { session } } = await client.auth.getSession();
-    if (!session && !isLoginPage) {
-      window.location.href = 'login.html';
-      return null;
-    } else if (session && isLoginPage) {
-      window.location.href = 'index.html';
-      return session;
-    }
-    return session;
-  } else {
-    // Local Session Check
-    const session = getCurrentSession();
-    if (!session && !isLoginPage) {
-      window.location.href = 'login.html';
-      return null;
-    } else if (session && isLoginPage) {
-      window.location.href = 'index.html';
-      return session;
-    }
-    return session;
-  }
+  const session = (WP_Supabase.isConfigured() && client)
+    ? (await client.auth.getSession()).data.session
+    : getCurrentSession();
+
+  if (!session && !isLoginPage) return redirectTo('login.html');
+  if (session && isLoginPage) return redirectTo('index.html');
+  return session;
 }
 
 /**
@@ -80,25 +71,27 @@ async function syncUserData() {
         .eq('user_id', user.id)
         .maybeSingle();
 
-      // 2. If no event exists yet (e.g. trigger didn't run), create one now
+      // 2. If no event exists yet (e.g. trigger didn't run), create one now.
+      //    user_id bersifat UNIQUE, jadi bila trigger menang balapan, insert ini diabaikan
+      //    lalu baris milik trigger dibaca ulang.
       if (!eventData) {
-        try {
-          const { data: newEvent } = await client
-            .from('wedding_events')
-            .insert({
-              user_id: user.id,
-              bride_name: brideName,
-              groom_name: groomName,
-              total_budget: 50000000,
-              akad_date: '2027-04-07T08:00:00+07:00'
-            })
-            .select()
-            .maybeSingle();
+        const { error: upsertErr } = await client
+          .from('wedding_events')
+          .upsert({
+            user_id: user.id,
+            bride_name: brideName,
+            groom_name: groomName,
+            total_budget: 50000000,
+            akad_date: '2027-04-07T08:00:00+07:00'
+          }, { onConflict: 'user_id', ignoreDuplicates: true });
+        if (upsertErr) console.warn('Auto create event fallback note:', upsertErr);
 
-          eventData = newEvent;
-        } catch (insertErr) {
-          console.warn('Auto create event fallback note:', insertErr);
-        }
+        const { data: reloaded } = await client
+          .from('wedding_events')
+          .select('*')
+          .eq('user_id', user.id)
+          .maybeSingle();
+        eventData = reloaded;
       }
 
       // 3. Update local wedding store with Supabase data
@@ -107,9 +100,13 @@ async function syncUserData() {
         localData.couple.bride = eventData.bride_name || brideName;
         localData.couple.groom = eventData.groom_name || groomName;
         localData.couple.akadDate = eventData.akad_date || localData.couple.akadDate;
-        localData.couple.resepsiDate = eventData.resepsi_date || localData.couple.resepsiDate;
+        localData.couple.akadLocation = eventData.akad_location ?? '';
+        localData.couple.resepsiDate = eventData.resepsi_date ?? '';
+        localData.couple.resepsiLocation = eventData.resepsi_location ?? '';
+        localData.couple.weddingTheme = eventData.wedding_theme ?? '';
         localData.couple.status = eventData.status_text || localData.couple.status;
-        localData.budget.totalBudget = Number(eventData.total_budget) || 50000000;
+        localData.budget.totalBudget = Number(eventData.total_budget) || WP_Utils.DEFAULT_TOTAL_BUDGET.wedding;
+        localData.budget.engagementTotalBudget = Number(eventData.engagement_total_budget) || WP_Utils.DEFAULT_TOTAL_BUDGET.engagement;
         if (eventData.photo_url) localData.couple.photoUrl = eventData.photo_url;
       } else {
         localData.couple.eventType = 'wedding';

@@ -150,7 +150,10 @@ Dashboard tidak dipisah menjadi file terpisah, melainkan menyesuaikan konten ber
 - **Hitung Mundur Real-time**: 4 kotak (Hari, Jam, Menit, Detik) berdetak setiap detik menuju hari acara yang sesuai (`akadDate`).
 - **Ringkasan Budget**: SVG Donut chart dua warna (Terpakai vs Sisa), nominal, dan persentase.
 - **Hadiah dari Tamu**: Total nominal dan jumlah tamu pemberi hadiah.
-- **Prioritas Mendesak**: 5 tugas/dokumen paling mendesak yang menyesuaikan event (Administrasi KUA untuk Wedding / Konfirmasi Tempat & Hantaran untuk Engagement).
+- **Prioritas Mendesak**: Maksimal 5 hal yang perlu segera ditindaklanjuti, disusun otomatis dari data acara aktif:
+  - Checklist Peta Persiapan yang belum selesai — tahap aktif **Mendesak**, tahap berikutnya **Perhatian**
+  - Pengeluaran berstatus *Belum bayar* / *DP* — **Perhatian**
+  - Jumlah tamu yang belum konfirmasi RSVP — **Tercatat**
 
 ### 3. Peta Persiapan (`persiapan.html`)
 
@@ -182,6 +185,7 @@ Halaman `alur-pernikahan.html` dipertahankan nama filenya untuk kompatibilitas, 
 ### 5. Budget (`budget.html`)
 
 - Halaman `budget.html` dan tabel database `budget_items` bersifat **reusable** untuk kedua jenis event.
+- **Total budget terpisah** per jenis acara: Wedding memakai kolom `total_budget` (default Rp 50.000.000), Engagement memakai `engagement_total_budget` (default Rp 15.000.000).
 - **Opsi Kategori Pengeluaran** disesuaikan secara otomatis:
   - **Wedding**: `Venue`, `Akad`, `Resepsi`, `Catering`, `MUA`, `Dokumentasi`, `Seserahan`, `Lain-lain`.
   - **Engagement**: `Venue/Lokasi`, `MUA & Busana`, `Dekorasi`, `Catering`, `Hantaran/Seserahan`, `Dokumentasi`, `Ring/Cincin`, `Lain-lain`.
@@ -246,11 +250,11 @@ wedding_planner/
 │   ├── schema.sql              # Skema PostgreSQL + RLS + event_type
 │   ├── 002_integrate_page_state.sql # Migrasi sinkronisasi checklist
 │   ├── 003_enable_couple_photo_upload.sql # Storage bucket kebijakan foto
-│   └── 004_add_event_type.sql  # Migrasi penambahan kolom event_type
+│   ├── 004_add_event_type.sql  # Migrasi penambahan kolom event_type
+│   └── 005_fix_schema_mismatch.sql # Kolom yang dipakai aplikasi, UNIQUE(user_id), event_type per item
 │
 ├── assets/
-│   ├── images/                 # Foto pasangan, avatar placeholder
-│   └── icons/                  # SVG ikon
+│   └── images/                 # Foto pasangan default (couple_kita.jpeg)
 │
 └── img/
     ├── slide1.jpeg s/d slide5.jpeg # Referensi mockup
@@ -335,17 +339,21 @@ wedding_events
 ├── event_type ('wedding' | 'engagement')
 ├── bride_name / CPW
 ├── groom_name / CPP
-├── event_name
-├── event_date / akad_date
-├── location
-├── total_budget
+├── akad_date, akad_location
+├── resepsi_date, resepsi_location
+├── wedding_theme
+├── total_budget             (budget Wedding)
+├── engagement_total_budget  (budget Engagement)
 └── photo_url
 ```
 
 #### Reusabilitas Tabel
 
-1. **`budget_items`**: Bersifat reusable untuk seluruh jenis event tanpa membuat tabel terpisah (seperti `wedding_budget_items` atau `engagement_budget_items`). Seluruh item dibedakan berdasarkan `event_id`, di mana acara tersebut memiliki atribut `event_type`.
-2. **`event_settings`**: Berfungsi menyimpan state/konfigurasi fitur berbasis event dengan kunci terisolasi (*scoped key*) agar state Wedding dan Engagement tidak saling menimpa.
+Setiap pengguna memiliki **tepat satu** baris `wedding_events` (`UNIQUE(user_id)`); mengganti jenis acara hanya mengubah kolom `event_type` pada baris tersebut. Karena itu data per item ditandai sendiri:
+
+1. **`budget_items`** & **`guests`**: Reusable untuk seluruh jenis event tanpa tabel terpisah. Setiap baris memiliki kolom `event_type` sendiri, dan aplikasi memfilter berdasarkan `event_id` + `event_type` aktif sehingga pengeluaran/tamu Wedding dan Engagement tidak tercampur.
+2. **`event_settings`**: Menyimpan state checklist (Peta Persiapan, Seserahan, Hari-H) dengan kunci terisolasi (*scoped key*, prefix `engagement_` untuk Engagement) agar state Wedding dan Engagement tidak saling menimpa.
+3. **Mode Lokal / Demo**: Data disimpan di `localStorage` dengan kunci yang dipisah per `event_type` menggunakan aturan prefix yang sama.
 
 ---
 
@@ -359,7 +367,14 @@ wedding_events
      ANON_KEY: 'eyJhbGciOi...'
    };
    ```
-3. Jalankan SQL [`sql/schema.sql`](sql/schema.sql) dan [`sql/004_add_event_type.sql`](sql/004_add_event_type.sql) di Supabase SQL Editor.
+3. Jalankan file SQL berikut **secara berurutan** di Supabase SQL Editor:
+   1. [`sql/schema.sql`](sql/schema.sql) — tabel, RLS, trigger pendaftaran
+   2. [`sql/002_integrate_page_state.sql`](sql/002_integrate_page_state.sql) — tabel `event_settings` untuk checklist
+   3. [`sql/003_enable_couple_photo_upload.sql`](sql/003_enable_couple_photo_upload.sql) — bucket foto pasangan (wajib untuk upload foto)
+   4. [`sql/004_add_event_type.sql`](sql/004_add_event_type.sql) — kolom `event_type`
+   5. [`sql/005_fix_schema_mismatch.sql`](sql/005_fix_schema_mismatch.sql) — kolom `wedding_theme`, `engagement_total_budget` & `guests.notes`, `UNIQUE(user_id)`, `event_type` pada `budget_items`/`guests`
+
+   Untuk database yang sudah berjalan, cukup jalankan migrasi yang belum pernah dijalankan (semua migrasi aman dijalankan ulang).
 4. Buka [`login.html`](login.html) di browser (via Live Server, atau klik kanan → Open with Browser).
 5. Daftar akun baru atau klik **Masuk Mode Demo** untuk langsung mengakses dashboard.
 6. Untuk mengubah jenis acara, klik badge **💍 Wedding / 💐 Engagement** di bagian header atau buka menu **Akun & Profil**.

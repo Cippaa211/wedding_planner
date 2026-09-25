@@ -41,6 +41,7 @@ async function loadGuests() {
       .from('guests')
       .select('*')
       .eq('event_id', session.eventId)
+      .eq('event_type', WP_Utils.getEventType())
       .order('created_at', { ascending: false });
     if (error) {
       WP_UI.showToast('Gagal memuat data tamu: ' + error.message, 'error');
@@ -49,12 +50,16 @@ async function loadGuests() {
       return;
     }
   }
-  guestList = WP_Utils.getStorage(WP_Utils.STORAGE_KEYS.GUESTS) || [];
+  guestList = WP_Utils.getStorage(getLocalGuestsKey()) || [];
 }
 
 // ─── Save (local) ─────────────────────────────────────────────────────────────
+function getLocalGuestsKey() {
+  return WP_Utils.getScopedStorageKey(WP_Utils.STORAGE_KEYS.GUESTS);
+}
+
 function saveLocal() {
-  WP_Utils.setStorage(WP_Utils.STORAGE_KEYS.GUESTS, guestList);
+  WP_Utils.setStorage(getLocalGuestsKey(), guestList);
 }
 
 // ─── Stats ────────────────────────────────────────────────────────────────────
@@ -220,7 +225,7 @@ async function saveGuest(e) {
       let newGuest;
       if (useSupabase) {
         const { data, error } = await client.from('guests')
-          .insert({ ...payload, event_id: session.eventId })
+          .insert({ ...payload, event_id: session.eventId, event_type: WP_Utils.getEventType() })
           .select()
           .single();
         if (error) throw error;
@@ -245,7 +250,8 @@ async function saveGuest(e) {
 async function removeGuest(id) {
   if (!confirm('Hapus tamu ini dari daftar?')) return;
   const client = WP_Supabase.getClient();
-  const useSupabase = WP_Supabase.isConfigured() && client;
+  const session = WP_Auth.getCurrentSession();
+  const useSupabase = WP_Supabase.isConfigured() && client && session?.eventId;
 
   try {
     if (useSupabase) {

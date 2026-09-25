@@ -105,6 +105,63 @@ const DEFAULT_SESERAHAN_CATEGORIES = [
   }
 ];
 
+const DEFAULT_HANTARAN_CATEGORIES = [
+  {
+    id: 'cincin',
+    name: 'Cincin & Perhiasan',
+    icon: '💍',
+    isOpen: true,
+    items: [
+      { id: 'hc1', name: 'Cincin Lamaran / Engagement Ring', done: false, price: null, link: '' },
+      { id: 'hc2', name: 'Kotak Cincin Hias', done: false, price: null, link: '' }
+    ]
+  },
+  {
+    id: 'hantaran-pria',
+    name: 'Hantaran dari Pihak Pria',
+    icon: '🎁',
+    isOpen: false,
+    items: [
+      { id: 'hp1', name: 'Kain / Bahan Kebaya', done: false, price: null, link: '' },
+      { id: 'hp2', name: 'Tas & Sepatu', done: false, price: null, link: '' },
+      { id: 'hp3', name: 'Set Skincare / Kosmetik', done: false, price: null, link: '' },
+      { id: 'hp4', name: 'Parfum', done: false, price: null, link: '' }
+    ]
+  },
+  {
+    id: 'kue-buah',
+    name: 'Kue & Buah',
+    icon: '🍰',
+    isOpen: false,
+    items: [
+      { id: 'kb1', name: 'Kue Tradisional Khas Daerah', done: false, price: null, link: '' },
+      { id: 'kb2', name: 'Parsel Buah', done: false, price: null, link: '' },
+      { id: 'kb3', name: 'Cake / Bolu', done: false, price: null, link: '' }
+    ]
+  },
+  {
+    id: 'hantaran-balasan',
+    name: 'Hantaran Balasan Pihak Wanita',
+    icon: '🎀',
+    isOpen: false,
+    items: [
+      { id: 'hb1', name: 'Kemeja / Batik', done: false, price: null, link: '' },
+      { id: 'hb2', name: 'Sarung / Peci', done: false, price: null, link: '' },
+      { id: 'hb3', name: 'Kue Balasan', done: false, price: null, link: '' }
+    ]
+  },
+  {
+    id: 'perlengkapan',
+    name: 'Nampan & Dekorasi Hantaran',
+    icon: '🧺',
+    isOpen: false,
+    items: [
+      { id: 'np1', name: 'Sewa Nampan / Kotak Hantaran', done: false, price: null, link: '' },
+      { id: 'np2', name: 'Jasa Hias Hantaran', done: false, price: null, link: '' }
+    ]
+  }
+];
+
 let seserahanData = [];
 let activeFilter = 'all';
 let editItemContext = { catId: null, itemId: null };
@@ -150,7 +207,10 @@ async function loadSeserahanData() {
   if (saved && Array.isArray(saved) && saved.length > 0) {
     seserahanData = saved;
   } else {
-    seserahanData = JSON.parse(JSON.stringify(DEFAULT_SESERAHAN_CATEGORIES));
+    const defaults = WP_Utils.getEventType() === 'engagement'
+      ? DEFAULT_HANTARAN_CATEGORIES
+      : DEFAULT_SESERAHAN_CATEGORIES;
+    seserahanData = JSON.parse(JSON.stringify(defaults));
     saveSeserahanData();
   }
 }
@@ -290,10 +350,13 @@ function toggleItem(catId, itemId) {
 
 // ─── Add Item Modal ───────────────────────────────────────────────────────────
 function openAddItemModal(catId) {
+  // Kategori bisa berbeda per event_type; pakai kategori pertama bila tidak ditemukan
+  const cat = seserahanData.find(c => c.id === catId) || seserahanData[0];
+  if (!cat) return;
+  catId = cat.id;
   editItemContext = { catId, itemId: null };
-  const cat = seserahanData.find(c => c.id === catId);
 
-  document.getElementById('modal-item-title').textContent = `Tambah Item — ${cat ? cat.name : ''}`;
+  document.getElementById('modal-item-title').textContent = `Tambah Item — ${cat.name}`;
   document.getElementById('item-modal-name').value = '';
   document.getElementById('item-modal-price').value = '';
   document.getElementById('item-modal-link').value = '';

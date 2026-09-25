@@ -25,8 +25,7 @@ const DEFAULT_WEDDING_DATA = {
     akadLocation: 'Masjid Agung Al-Barkah, Bekasi',
     resepsiDate: '2027-04-07T11:00:00',
     resepsiLocation: 'Grand Ballroom Hotel Santika',
-    photoUrl: 'assets/images/couple_kita.jpeg',
-    avatarUrl: 'assets/images/avatar-placeholder.jpg'
+    photoUrl: 'assets/images/couple_kita.jpeg'
   },
   budget: {
     totalBudget: 50000000,
@@ -43,23 +42,14 @@ const DEFAULT_WEDDING_DATA = {
     totalAmount: 0,
     totalGuests: 0,
     items: []
-  },
-  priorities: [
-    { id: '1', title: 'Lengkapi Berkas Surat N1 - N5 Kelurahan', sub: 'Administrasi KUA • Tenggat 14 hari', status: 'urgent' },
-    { id: '2', title: 'Pemeriksaan Kesehatan & Suntik TT di Puskesmas', sub: 'Calon Pengantin Perempuan', status: 'urgent' },
-    { id: '3', title: 'Pelunasan DP Vendor Fotografi & Dokumentasi', sub: 'Budget • Jatuh tempo 30 Sept 2026', status: 'warning' },
-    { id: '4', title: 'Finalisasi Daftar Belanja Seserahan Alat Ibadah', sub: 'Seserahan • 2 item belum ditentukan harga', status: 'info' },
-    { id: '5', title: 'Penyusunan Draft Daftar Tamu Keluarga CPP & CPW', sub: 'Tamu & Hadiah • Target 300 Undangan', status: 'info' }
-  ]
+  }
 };
 
-const DEFAULT_ENGAGEMENT_PRIORITIES = [
-  { id: '1', title: 'Konfirmasi Tanggal & Tempat Acara Lamaran', sub: 'Persiapan Lamaran • Tenggat 7 hari', status: 'urgent' },
-  { id: '2', title: 'Finalisasi Daftar Belanja Hantaran & Cincin Lamaran', sub: 'Hantaran / Seserahan • Tenggat 14 hari', status: 'urgent' },
-  { id: '3', title: 'Booking Vendor Dekorasi & MUA Acara Lamaran', sub: 'Budget • Jatuh tempo 25 Sept 2026', status: 'warning' },
-  { id: '4', title: 'Penyusunan Susunan Acara & Utusan Jur Bicara', sub: 'Acara Lamaran • Koordinasi keluarga', status: 'info' },
-  { id: '5', title: 'Konfirmasi Undangan Tamu Keluarga Inti', sub: 'Tamu & Hadiah • Target 50 Undangan', status: 'info' }
-];
+// Total budget awal per event_type (kolom wedding_events.total_budget / engagement_total_budget)
+const DEFAULT_TOTAL_BUDGET = {
+  wedding: 50000000,
+  engagement: 15000000
+};
 
 const BUDGET_CATEGORIES = {
   wedding: ['Venue', 'Akad', 'Resepsi', 'Catering', 'MUA', 'Dokumentasi', 'Seserahan', 'Lain-lain'],
@@ -116,6 +106,28 @@ function formatShortDate(dateInput) {
 
   const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
   return `${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`;
+}
+
+/**
+ * ISO / timestamptz -> nilai <input type="datetime-local"> dalam zona waktu perangkat
+ * (mis. "2027-04-07T01:00:00+00:00" -> "2027-04-07T08:00" di WIB)
+ */
+function toDateTimeLocalValue(dateInput) {
+  if (!dateInput) return '';
+  const date = new Date(dateInput);
+  if (isNaN(date.getTime())) return '';
+  const pad = n => String(n).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
+/**
+ * Nilai <input type="datetime-local"> (waktu lokal tanpa zona) -> ISO UTC,
+ * agar kolom timestamptz tidak menganggapnya sebagai UTC.
+ */
+function fromDateTimeLocalValue(value) {
+  if (!value) return '';
+  const date = new Date(value);
+  return isNaN(date.getTime()) ? '' : date.toISOString();
 }
 
 /**
@@ -191,6 +203,40 @@ function getEventType(data) {
   return currentData.couple?.eventType || 'wedding';
 }
 
+/**
+ * Key localStorage yang dipisah per event_type agar data Wedding dan Engagement
+ * tidak saling menimpa. Wedding memakai key asli (kompatibel dengan data lama).
+ */
+function getScopedStorageKey(key, eventType) {
+  const type = eventType || getEventType();
+  if (type === 'engagement' && !key.startsWith('engagement_')) {
+    return `engagement_${key}`;
+  }
+  return key;
+}
+
+/**
+ * Total budget dipisah per event_type.
+ * Wedding: data.budget.totalBudget  <-> kolom total_budget
+ * Engagement: data.budget.engagementTotalBudget <-> kolom engagement_total_budget
+ */
+function getTotalBudgetField(eventType) {
+  return eventType === 'engagement'
+    ? { local: 'engagementTotalBudget', column: 'engagement_total_budget' }
+    : { local: 'totalBudget', column: 'total_budget' };
+}
+
+function getTotalBudget(data, eventType) {
+  const type = eventType || getEventType(data);
+  const value = Number(data.budget?.[getTotalBudgetField(type).local]);
+  return value > 0 ? value : DEFAULT_TOTAL_BUDGET[type] || DEFAULT_TOTAL_BUDGET.wedding;
+}
+
+function setTotalBudget(data, amount, eventType) {
+  const type = eventType || getEventType(data);
+  data.budget[getTotalBudgetField(type).local] = amount;
+}
+
 function getEventTypeName(type) {
   return type === 'engagement' ? 'Lamaran / Engagement' : 'Pernikahan (Wedding)';
 }
@@ -198,17 +244,22 @@ function getEventTypeName(type) {
 window.WP_Utils = {
   STORAGE_KEYS,
   DEFAULT_WEDDING_DATA,
-  DEFAULT_ENGAGEMENT_PRIORITIES,
   BUDGET_CATEGORIES,
   formatRupiah,
   formatNumber,
   formatDateIndo,
   formatShortDate,
   calculateCountdown,
+  toDateTimeLocalValue,
+  fromDateTimeLocalValue,
   getStorage,
   setStorage,
   initWeddingData,
   getEventType,
+  getScopedStorageKey,
+  DEFAULT_TOTAL_BUDGET,
+  getTotalBudgetField,
+  getTotalBudget,
+  setTotalBudget,
   getEventTypeName
-  initWeddingData
 };

@@ -6,11 +6,9 @@ const NAV_ITEMS = [
   { id: 'dashboard', label: 'Dashboard', icon: 'grid', href: 'index.html' },
   { id: 'persiapan', label: 'Peta Persiapan', icon: 'map-pin', href: 'persiapan.html' },
   { id: 'alur', label: 'Alur Acara', icon: 'git-branch', href: 'alur-pernikahan.html' },
-  { id: 'alur', label: 'Alur Pernikahan', icon: 'git-branch', href: 'alur-pernikahan.html' },
   { id: 'budget', label: 'Budget', icon: 'wallet', href: 'budget.html' },
   { id: 'tamu', label: 'Tamu & Hadiah', icon: 'users', href: 'tamu-hadiah.html' },
   { id: 'akad', label: 'Acara', icon: 'gem', href: 'akad-resepsi.html' },
-  { id: 'akad', label: 'Akad & Resepsi', icon: 'gem', href: 'akad-resepsi.html' },
   { id: 'seserahan', label: 'Seserahan', icon: 'gift', href: 'seserahan.html' },
   { id: 'akun', label: 'Akun', icon: 'user', href: 'akun.html' }
 ];
@@ -44,9 +42,15 @@ function getNavSvg(iconName) {
   }
 }
 
+let activeNavId = null;
+
 function renderSidebar(activeId) {
   const sidebarEl = document.getElementById('sidebar-container');
   if (!sidebarEl) return;
+
+  // Pertahankan menu aktif sebelumnya bila dipanggil ulang tanpa argumen
+  if (activeId) activeNavId = activeId;
+  activeId = activeNavId;
 
   const navHtml = NAV_ITEMS.map(item => {
     const isActive = item.id === activeId;
@@ -115,7 +119,6 @@ function renderHeader() {
             <h1>Halo, ${escapeHtml(bride)} & ${escapeHtml(groom)} 👋</h1>
             ${eventBadgeHtml}
           </div>
-          <h1>Halo, ${escapeHtml(bride)} & ${escapeHtml(groom)} 👋</h1>
           <p>Semoga hari bahagiamu berjalan lancar • ${todayStr}</p>
         </div>
       </div>
@@ -126,13 +129,12 @@ function renderHeader() {
         </button>
         <div class="header-user-menu" id="header-user-menu">
           <div class="user-avatar" onclick="WP_Layout.toggleUserMenu(event)" title="Akun & Profil">
-            <img src="${data.couple.avatarUrl}" alt="Avatar" onerror="this.onerror=null; this.src='data:image/svg+xml;utf8,<svg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'40\\' height=\\'40\\' viewBox=\\'0 0 24 24\\' fill=\\'none\\' stroke=\\'%23E11D48\\' stroke-width=\\'2\\' stroke-linecap=\\'round\\' stroke-linejoin=\\'round\\'><circle cx=\\'12\\' cy=\\'8\\' r=\\'5\\'/>  <path d=\\'M20 21a8 8 0 0 0-16 0\\'/></svg>';">
+            <img src="${escapeHtml(data.couple.photoUrl || 'assets/images/couple_kita.jpeg')}" alt="Avatar" onerror="this.onerror=null; this.src='data:image/svg+xml;utf8,<svg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'40\\' height=\\'40\\' viewBox=\\'0 0 24 24\\' fill=\\'none\\' stroke=\\'%23E11D48\\' stroke-width=\\'2\\' stroke-linecap=\\'round\\' stroke-linejoin=\\'round\\'><circle cx=\\'12\\' cy=\\'8\\' r=\\'5\\'/>  <path d=\\'M20 21a8 8 0 0 0-16 0\\'/></svg>';">
           </div>
           <div class="user-dropdown" id="user-dropdown">
             <div class="user-dropdown-info">
               <div class="user-dropdown-name">${escapeHtml(bride)} &amp; ${escapeHtml(groom)}</div>
               <div class="user-dropdown-role">Pasangan (${WP_Utils.getEventTypeName(eventType)})</div>
-              <div class="user-dropdown-role">Calon Pengantin</div>
             </div>
             <hr class="user-dropdown-divider">
             <a href="akun.html" class="user-dropdown-item">

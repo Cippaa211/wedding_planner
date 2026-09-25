@@ -19,10 +19,10 @@ async function init() {
   setField('event-type',         data.couple.eventType || 'wedding');
   setField('bride',              data.couple.bride || '');
   setField('groom',              data.couple.groom || '');
-  setField('akad',              (data.couple.akadDate || '').slice(0, 16));
+  setField('akad',               WP_Utils.toDateTimeLocalValue(data.couple.akadDate));
   setField('location',           data.couple.akadLocation || '');
-  setField('reception-date',    (data.couple.receptionDate || '').slice(0, 16));
-  setField('reception-location', data.couple.receptionLocation || '');
+  setField('reception-date',     WP_Utils.toDateTimeLocalValue(data.couple.resepsiDate));
+  setField('reception-location', data.couple.resepsiLocation || '');
   setField('wedding-theme',      data.couple.weddingTheme || '');
 
   // Foto preview
@@ -171,22 +171,22 @@ async function save(event) {
     data.couple.eventType         = newEventType;
     data.couple.bride             = document.getElementById('bride')?.value.trim()             || data.couple.bride;
     data.couple.groom             = document.getElementById('groom')?.value.trim()             || data.couple.groom;
-    data.couple.akadDate          = document.getElementById('akad')?.value                     || data.couple.akadDate;
+    data.couple.akadDate          = WP_Utils.fromDateTimeLocalValue(document.getElementById('akad')?.value) || data.couple.akadDate;
     data.couple.akadLocation      = document.getElementById('location')?.value.trim()          || '';
-    data.couple.receptionDate     = document.getElementById('reception-date')?.value           || '';
-    data.couple.receptionLocation = document.getElementById('reception-location')?.value.trim()|| '';
+    data.couple.resepsiDate       = WP_Utils.fromDateTimeLocalValue(document.getElementById('reception-date')?.value);
+    data.couple.resepsiLocation   = document.getElementById('reception-location')?.value.trim()|| '';
     data.couple.weddingTheme      = document.getElementById('wedding-theme')?.value.trim()     || '';
 
     if (canCloud) {
       const { data: updatedRows, error } = await client.from('wedding_events').update({
-        event_type:         data.couple.eventType,
-        bride_name:         data.couple.bride,
-        groom_name:         data.couple.groom,
-        akad_date:          data.couple.akadDate     || null,
-        akad_location:      data.couple.akadLocation || null,
-        reception_date:     data.couple.receptionDate     || null,
-        reception_location: data.couple.receptionLocation || null,
-        wedding_theme:      data.couple.weddingTheme  || null,
+        event_type:       data.couple.eventType,
+        bride_name:       data.couple.bride,
+        groom_name:       data.couple.groom,
+        akad_date:        data.couple.akadDate        || null,
+        akad_location:    data.couple.akadLocation    || null,
+        resepsi_date:     data.couple.resepsiDate     || null,
+        resepsi_location: data.couple.resepsiLocation || null,
+        wedding_theme:    data.couple.weddingTheme    || null,
       }).eq('id', session.eventId).select();
 
       if (error) throw error;

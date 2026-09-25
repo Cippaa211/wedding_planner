@@ -177,14 +177,12 @@ async function initAlurPernikahan() {
   const pageTitleEl = document.querySelector('.page-header-title h2');
   const pageDescEl = document.querySelector('.page-header-title p');
   if (pageTitleEl) {
-    pageTitleEl.textContent = 'Alur Acara';
-    pageTitleEl.textContent = 'Panduan Alur Administrasi Pernikahan';
+    pageTitleEl.textContent = eventType === 'engagement' ? 'Alur Acara Lamaran 📖' : 'Alur Pernikahan 📖';
   }
   if (pageDescEl) {
     pageDescEl.textContent = eventType === 'engagement'
-      ? 'Alur Acara Lamaran — Panduan alur persiapan pihak laki-laki dan perempuan untuk acara lamaran.'
-      : 'Alur Pernikahan — Panduan lengkap pengurusan dokumen dari RT/RW, Puskesmas, hingga KUA untuk kedua calon pengantin.';
-    pageDescEl.textContent = 'Petunjuk alur pengurusan surat nikah N1-N5 untuk CPP & CPW secara terpisah dan bertahap.';
+      ? 'Panduan alur persiapan pihak laki-laki dan perempuan untuk acara lamaran.'
+      : 'Petunjuk alur pengurusan surat nikah N1-N5 untuk CPP & CPW secara terpisah dan bertahap.';
   }
 
   renderAlurTimeline();
@@ -200,11 +198,10 @@ function renderAlurTimeline() {
   const groomName = data.couple.groom || 'Angga';
 
   const sourceData = eventType === 'engagement' ? ALUR_ENGAGEMENT_DATA : ALUR_DATA;
-  const groomTitle = `Dari Calon Pengantin Laki-laki (${groomName})`;
-  const brideTitle = `Dari Calon Pengantin Perempuan (${brideName})`;
-
-  const groomTitle = eventType === 'engagement' ? `Persiapan Pihak Laki-laki (${groomName})` : `Dari Calon Pengantin Laki-laki (${groomName})`;
-  const brideTitle = eventType === 'engagement' ? `Persiapan Pihak Perempuan (${brideName})` : `Dari Calon Pengantin Perempuan (${brideName})`;
+  const safeGroom = escapeHtml(groomName);
+  const safeBride = escapeHtml(brideName);
+  const groomTitle = eventType === 'engagement' ? `Persiapan Pihak Laki-laki (${safeGroom})` : `Dari Calon Pengantin Laki-laki (${safeGroom})`;
+  const brideTitle = eventType === 'engagement' ? `Persiapan Pihak Perempuan (${safeBride})` : `Dari Calon Pengantin Perempuan (${safeBride})`;
 
   const groomSectionHtml = `
     <div class="alur-section-wrapper">
@@ -213,7 +210,6 @@ function renderAlurTimeline() {
         <div class="alur-section-header">
           <div class="alur-header-left">
             <div class="alur-avatar-badge groom">${sourceData.groom.avatar}</div>
-            <div class="alur-avatar-badge groom">${ALUR_DATA.groom.avatar}</div>
             <div class="alur-section-title">${groomTitle}</div>
           </div>
           <div class="alur-header-icon">
@@ -223,7 +219,6 @@ function renderAlurTimeline() {
 
         <div class="alur-steps-grid">
           ${sourceData.groom.steps.map(step => `
-          ${ALUR_DATA.groom.steps.map(step => `
             <div class="alur-step-item">
               <div class="alur-step-top">
                 <div class="alur-step-number groom">${step.number}</div>
@@ -253,7 +248,6 @@ function renderAlurTimeline() {
         <div class="alur-section-header">
           <div class="alur-header-left">
             <div class="alur-avatar-badge bride">${sourceData.bride.avatar}</div>
-            <div class="alur-avatar-badge bride">${ALUR_DATA.bride.avatar}</div>
             <div class="alur-section-title">${brideTitle}</div>
           </div>
           <div class="alur-header-icon">
@@ -263,7 +257,6 @@ function renderAlurTimeline() {
 
         <div class="alur-steps-grid">
           ${sourceData.bride.steps.map(step => `
-          ${ALUR_DATA.bride.steps.map(step => `
             <div class="alur-step-item">
               <div class="alur-step-top">
                 <div class="alur-step-number bride">${step.number}</div>

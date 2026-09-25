@@ -19,8 +19,10 @@ CREATE TABLE IF NOT EXISTS public.profiles (
 -- 3. TABEL WEDDING EVENTS (Data Acara Pernikahan)
 CREATE TABLE IF NOT EXISTS public.wedding_events (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
-  event_type TEXT NOT NULL DEFAULT 'wedding', -- 'wedding' atau 'engagement'
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL
+    CONSTRAINT wedding_events_user_id_key UNIQUE,
+  event_type TEXT NOT NULL DEFAULT 'wedding'
+    CONSTRAINT wedding_events_event_type_check CHECK (event_type IN ('wedding', 'engagement')),
   bride_name TEXT NOT NULL DEFAULT 'Ayu',
   groom_name TEXT NOT NULL DEFAULT 'Angga',
   full_name_bride TEXT,
@@ -31,7 +33,9 @@ CREATE TABLE IF NOT EXISTS public.wedding_events (
   akad_location TEXT DEFAULT 'Masjid Agung Al-Barkah, Bekasi',
   resepsi_date TIMESTAMPTZ DEFAULT '2027-04-07 11:00:00+07',
   resepsi_location TEXT DEFAULT 'Grand Ballroom Hotel Santika',
+  wedding_theme TEXT,
   total_budget NUMERIC(15, 2) DEFAULT 50000000,
+  engagement_total_budget NUMERIC(15, 2) DEFAULT 15000000,
   photo_url TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
@@ -56,6 +60,8 @@ CREATE TABLE IF NOT EXISTS public.tasks (
 CREATE TABLE IF NOT EXISTS public.budget_items (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   event_id UUID REFERENCES public.wedding_events(id) ON DELETE CASCADE NOT NULL,
+  event_type TEXT NOT NULL DEFAULT 'wedding'
+    CONSTRAINT budget_items_event_type_check CHECK (event_type IN ('wedding', 'engagement')),
   name TEXT NOT NULL,
   category TEXT NOT NULL DEFAULT 'Lain-lain', -- 'Venue', 'Akad', 'MUA', 'Dokumentasi', 'Seserahan', dll.
   planned_amount NUMERIC(15, 2) DEFAULT 0,
@@ -86,6 +92,8 @@ CREATE TABLE IF NOT EXISTS public.seserahan_items (
 CREATE TABLE IF NOT EXISTS public.guests (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   event_id UUID REFERENCES public.wedding_events(id) ON DELETE CASCADE NOT NULL,
+  event_type TEXT NOT NULL DEFAULT 'wedding'
+    CONSTRAINT guests_event_type_check CHECK (event_type IN ('wedding', 'engagement')),
   name TEXT NOT NULL,
   relation TEXT DEFAULT 'Teman',
   phone TEXT,
@@ -95,6 +103,7 @@ CREATE TABLE IF NOT EXISTS public.guests (
   rsvp_status TEXT DEFAULT 'pending',
   gift_amount NUMERIC(15, 2) DEFAULT 0,
   gift_notes TEXT,
+  notes TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 

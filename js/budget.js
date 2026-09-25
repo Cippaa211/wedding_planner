@@ -11,15 +11,34 @@ function escapeHtml(value) {
   }[char]));
 }
 
-const CATEGORY_COLORS = {
-  'Venue': '#F59E0B',
-  'Akad': '#8B5CF6',
-  'Dokumentasi': '#E11D48',
-  'Seserahan': '#EC4899',
-  'MUA': '#6366F1',
-  'Catering': '#10B981',
-  'Lain-lain': '#64748B'
+// Warna donut & kelas badge untuk kategori Wedding dan Engagement (WP_Utils.BUDGET_CATEGORIES)
+const CATEGORY_STYLES = {
+  'Venue':              { color: '#F59E0B', badge: 'badge-cat-venue' },
+  'Venue/Lokasi':       { color: '#F59E0B', badge: 'badge-cat-venue' },
+  'Akad':               { color: '#8B5CF6', badge: 'badge-cat-akad' },
+  'Resepsi':            { color: '#0EA5E9', badge: 'badge-cat-resepsi' },
+  'Dokumentasi':        { color: '#E11D48', badge: 'badge-cat-dokumentasi' },
+  'Seserahan':          { color: '#EC4899', badge: 'badge-cat-seserahan' },
+  'Hantaran/Seserahan': { color: '#EC4899', badge: 'badge-cat-seserahan' },
+  'MUA':                { color: '#6366F1', badge: 'badge-cat-mua' },
+  'MUA & Busana':       { color: '#6366F1', badge: 'badge-cat-mua' },
+  'Catering':           { color: '#10B981', badge: 'badge-cat-catering' },
+  'Dekorasi':           { color: '#14B8A6', badge: 'badge-cat-dekorasi' },
+  'Ring/Cincin':        { color: '#EAB308', badge: 'badge-cat-cincin' },
+  'Lain-lain':          { color: '#64748B', badge: 'badge-cat-default' }
 };
+
+const DEFAULT_WEDDING_EXPENSES = [
+  { id: '1', date: '2026-09-16', name: 'Prewedding', category: 'Dokumentasi', amount: 850000, status: 'Lunas' },
+  { id: '2', date: '2026-09-16', name: 'DP Venue', category: 'Venue', amount: 6000000, status: 'DP' },
+  { id: '3', date: '2026-09-16', name: 'DP Makeup', category: 'Akad', amount: 2000000, status: 'DP' },
+  { id: '4', date: '2026-09-16', name: 'Sajadah', category: 'Seserahan', amount: 88000, status: 'Lunas' },
+  { id: '5', date: '2026-09-16', name: 'Mukena', category: 'Seserahan', amount: 185000, status: 'Lunas' }
+];
+
+function getCategoryColor(category) {
+  return CATEGORY_STYLES[category]?.color || '#64748B';
+}
 
 async function initBudgetPage() {
   await WP_Auth.syncUserData();
@@ -57,7 +76,8 @@ function populateCategoryDropdown() {
  */
 async function loadBudgetData() {
   const data = WP_Utils.initWeddingData();
-  totalBudgetAmount = Number(data.budget.totalBudget) || 50000000;
+  const eventType = WP_Utils.getEventType(data);
+  totalBudgetAmount = WP_Utils.getTotalBudget(data, eventType);
 
   const client = WP_Supabase.getClient();
   const session = WP_Auth.getCurrentSession();
@@ -68,6 +88,7 @@ async function loadBudgetData() {
         .from('budget_items')
         .select('*')
         .eq('event_id', session.eventId)
+        .eq('event_type', eventType)
         .order('expense_date', { ascending: false });
 
       if (!error && dbExpenses) {
@@ -82,29 +103,33 @@ async function loadBudgetData() {
         }));
         return;
       }
-      if (error) {
-        WP_UI.showToast(`Pengeluaran tidak dapat dimuat: ${error.message}`, 'error');
-        return;
-      }
+      WP_UI.showToast(`Pengeluaran tidak dapat dimuat dari server: ${error.message}. Menampilkan data di perangkat.`, 'error');
     } catch (err) {
       console.warn('Budget fetch error, using local fallback:', err);
     }
   }
 
-  // Fallback Local Storage
-  if (data.budget.expenses && data.budget.expenses.length > 0) {
-    expensesList = data.budget.expenses;
-  } else {
-    expensesList = [
-      { id: '1', date: '2026-09-16', name: 'Prewedding', category: 'Dokumentasi', amount: 850000, status: 'Lunas' },
-      { id: '2', date: '2026-09-16', name: 'DP Venue', category: 'Venue', amount: 6000000, status: 'DP' },
-      { id: '3', date: '2026-09-16', name: 'DP Makeup', category: 'Akad', amount: 2000000, status: 'DP' },
-      { id: '4', date: '2026-09-16', name: 'Sajadah', category: 'Seserahan', amount: 88000, status: 'Lunas' },
-      { id: '5', date: '2026-09-16', name: 'Mukena', category: 'Seserahan', amount: 185000, status: 'Lunas' }
-    ];
-    data.budget.expenses = expensesList;
-    WP_Utils.setStorage(WP_Utils.STORAGE_KEYS.WEDDING_DATA, data);
+  // Fallback Local Storage (dipisah per event_type)
+  expensesList = loadLocalExpenses(data, eventType);
+}
+
+/**
+ * Pengeluaran lokal per event_type. Data lama (versi sebelumnya disimpan di
+ * wp_wedding_data.budget.expenses) otomatis dipakai sebagai data Wedding.
+ */
+function loadLocalExpenses(data, eventType) {
+  const key = WP_Utils.getScopedStorageKey(WP_Utils.STORAGE_KEYS.EXPENSES, eventType);
+  const saved = WP_Utils.getStorage(key);
+  if (Array.isArray(saved)) return saved;
+
+  let initial = [];
+  if (eventType === 'wedding') {
+    initial = (data.budget.expenses && data.budget.expenses.length > 0)
+      ? data.budget.expenses
+      : JSON.parse(JSON.stringify(DEFAULT_WEDDING_EXPENSES));
   }
+  WP_Utils.setStorage(key, initial);
+  return initial;
 }
 
 /**
@@ -112,10 +137,9 @@ async function loadBudgetData() {
  */
 function saveBudgetData() {
   const data = WP_Utils.initWeddingData();
-  data.budget.totalBudget = totalBudgetAmount;
-  data.budget.expenses = expensesList;
-  data.budget.totalExpenses = expensesList.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+  WP_Utils.setTotalBudget(data, totalBudgetAmount);
   WP_Utils.setStorage(WP_Utils.STORAGE_KEYS.WEDDING_DATA, data);
+  WP_Utils.setStorage(WP_Utils.getScopedStorageKey(WP_Utils.STORAGE_KEYS.EXPENSES), expensesList);
 }
 
 /**
@@ -170,15 +194,7 @@ function renderExpenseTable() {
 }
 
 function getCategoryBadgeClass(category) {
-  switch (category) {
-    case 'Venue': return 'badge-cat-venue';
-    case 'Akad': return 'badge-cat-akad';
-    case 'Dokumentasi': return 'badge-cat-dokumentasi';
-    case 'Seserahan': return 'badge-cat-seserahan';
-    case 'MUA': return 'badge-cat-mua';
-    case 'Catering': return 'badge-cat-catering';
-    default: return 'badge-cat-default';
-  }
+  return CATEGORY_STYLES[category]?.badge || 'badge-cat-default';
 }
 
 /**
@@ -205,13 +221,13 @@ function renderCategoryBreakdown() {
       legendList.innerHTML = categories.map(cat => {
         const amount = catTotals[cat];
         const percent = totalSpent > 0 ? Math.round((amount / totalSpent) * 100) : 0;
-        const color = CATEGORY_COLORS[cat] || '#64748B';
+        const color = getCategoryColor(cat);
 
         return `
           <div class="budget-legend-item">
             <div class="legend-label-group">
               <span class="legend-dot" style="background-color: ${color};"></span>
-              <span class="legend-label">${cat}</span>
+              <span class="legend-label">${escapeHtml(cat)}</span>
             </div>
             <div>
               <span class="legend-amount">${WP_Utils.formatRupiah(amount)}</span>
@@ -243,7 +259,7 @@ function renderCategoryBreakdown() {
         const strokeDashoffset = -accumulatedOffset;
         accumulatedOffset += strokeLength;
 
-        const color = CATEGORY_COLORS[cat] || '#64748B';
+        const color = getCategoryColor(cat);
 
         return `
           <circle
@@ -321,6 +337,7 @@ async function handleAddExpenseSubmit(e) {
         .from('budget_items')
         .insert({
           event_id: session.eventId,
+          event_type: WP_Utils.getEventType(),
           name: name,
           category: category,
           actual_amount: amount,
@@ -369,8 +386,8 @@ async function handleAddExpenseSubmit(e) {
  */
 async function handleEditBudgetSubmit(e) {
   e.preventDefault();
-  const newBudget = Number(document.getElementById('edit-total-budget-input').value) || 50000000;
-  totalBudgetAmount = newBudget;
+  const eventType = WP_Utils.getEventType();
+  const newBudget = Number(document.getElementById('edit-total-budget-input').value) || WP_Utils.DEFAULT_TOTAL_BUDGET[eventType];
 
   const client = WP_Supabase.getClient();
   const session = WP_Auth.getCurrentSession();
@@ -379,7 +396,7 @@ async function handleEditBudgetSubmit(e) {
     try {
       const { error } = await client
         .from('wedding_events')
-        .update({ total_budget: newBudget })
+        .update({ [WP_Utils.getTotalBudgetField(eventType).column]: newBudget })
         .eq('id', session.eventId);
       if (error) {
         WP_UI.showToast(`Budget tidak tersimpan: ${error.message}`, 'error');
@@ -390,6 +407,8 @@ async function handleEditBudgetSubmit(e) {
     }
   }
 
+  // Ubah nilai di memori hanya setelah server menerima (atau mode lokal)
+  totalBudgetAmount = newBudget;
   saveBudgetData();
   renderBudgetStats();
   closeEditBudgetModal();
@@ -403,7 +422,8 @@ async function deleteExpense(itemId) {
   if (!confirm('Apakah Anda yakin ingin menghapus pengeluaran ini?')) return;
 
   const client = WP_Supabase.getClient();
-  if (WP_Supabase.isConfigured() && client) {
+  const session = WP_Auth.getCurrentSession();
+  if (WP_Supabase.isConfigured() && client && session?.eventId) {
     try {
       const { error } = await client
         .from('budget_items')

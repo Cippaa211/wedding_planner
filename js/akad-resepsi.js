@@ -1,9 +1,10 @@
 /**
  * Akad & Resepsi — Checklist Operasional Hari-H + Rundown Acara
  * Fitur: Checklist per sesi (Pra-Akad, Akad, Resepsi, Pasca), Tambah/Hapus tugas,
- *        Edit tugas, PIC, waktu, sinkronisasi Supabase + LocalStorage fallback
+ *        Edit tugas, PIC, waktu, sinkronisasi Supabase (event_settings) + LocalStorage fallback
  */
 
+// Key otomatis diberi prefix engagement_ oleh WP_DataStore bila event_type = engagement
 const EVENT_KEY = 'wp_event_tasks';
 
 const DEFAULT_TASKS = [
@@ -73,11 +74,6 @@ function getActiveSessions() {
   return eventType === 'engagement' ? ENGAGEMENT_SESSIONS : SESSIONS;
 }
 
-function getStorageKey() {
-  const eventType = WP_Utils.getEventType();
-  return eventType === 'engagement' ? 'wp_engagement_tasks' : EVENT_KEY;
-}
-
 // ─── Init ─────────────────────────────────────────────────────────────────────
 async function initEvent() {
   await WP_Auth.syncUserData();
@@ -87,30 +83,42 @@ async function initEvent() {
   const pageTitleEl = document.querySelector('.page-header-title h2');
   const pageDescEl = document.querySelector('.page-header-title p');
   if (pageTitleEl) {
-    pageTitleEl.textContent = 'Acara';
+    pageTitleEl.textContent = eventType === 'engagement' ? 'Acara Lamaran 💐' : 'Akad & Resepsi 💍';
   }
   if (pageDescEl) {
     pageDescEl.textContent = eventType === 'engagement'
-      ? 'Acara Lamaran — Checklist operasional & rundown hari-H acara lamaran / engagement.'
-      : 'Akad Nikah & Resepsi — Checklist operasional & rundown persiapan hari-H akad nikah dan resepsi.';
+      ? 'Checklist operasional & rundown hari-H acara lamaran. Centang setiap tugas yang sudah selesai.'
+      : 'Checklist operasional & rundown hari-H akad nikah dan resepsi. Centang setiap tugas yang sudah selesai.';
   }
 
-  loadTasks();
+  populateSessionOptions();
+  await loadTasks();
   renderAll();
 }
 
+function populateSessionOptions() {
+  const select = document.getElementById('task-session');
+  if (!select) return;
+  select.innerHTML = getActiveSessions()
+    .map(sess => `<option value="${sess.id}">${WP_ESC2(sess.label)}</option>`)
+    .join('');
+}
+
 // ─── Load/Save ────────────────────────────────────────────────────────────────
-function loadTasks() {
+async function loadTasks() {
   const eventType = WP_Utils.getEventType();
-  const key = getStorageKey();
-  const saved = WP_Utils.getStorage(key);
-  const defaultList = eventType === 'engagement' ? DEFAULT_ENGAGEMENT_TASKS : DEFAULT_TASKS;
-  eventTasks = (saved && saved.length > 0) ? saved : JSON.parse(JSON.stringify(defaultList));
-  if (!saved || saved.length === 0) saveTasks();
+  const saved = await WP_DataStore.loadPageState(EVENT_KEY, null);
+  if (Array.isArray(saved) && saved.length > 0) {
+    eventTasks = saved;
+  } else {
+    const defaultList = eventType === 'engagement' ? DEFAULT_ENGAGEMENT_TASKS : DEFAULT_TASKS;
+    eventTasks = JSON.parse(JSON.stringify(defaultList));
+    saveTasks();
+  }
 }
 
 function saveTasks() {
-  WP_Utils.setStorage(getStorageKey(), eventTasks);
+  return WP_DataStore.savePageState(EVENT_KEY, eventTasks);
 }
 
 // ─── Stats ────────────────────────────────────────────────────────────────────
