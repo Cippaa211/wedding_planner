@@ -176,7 +176,8 @@ Halaman `persiapan.html` menggunakan conditional rendering berdasarkan `event_ty
   ```
   Menampilkan 5 tahapan stepper dan 12 checklist persiapan lamaran interaktif.
 
-- **Bisa diubah sepenuhnya**: tambah item (bisa beberapa sekaligus, satu per baris), edit & hapus item, **Edit Tahap** (nama, ikon, judul, deskripsi, judul daftar checklist, keterangan hasil), **Tambah Tahap**, dan hapus tahap. Status tahap (Belum/Proses/Selesai) dihitung ulang otomatis dari item.
+- **Bisa diubah sepenuhnya**: tambah, edit, dan hapus item; **Edit Tahap** (nama, ikon, judul, deskripsi, judul daftar checklist, keterangan hasil); **Tambah Tahap**; serta hapus tahap. Status tahap (Belum/Proses/Selesai) dihitung ulang otomatis dari item.
+- **Detail belanja per item**: saat menambah atau mengedit checklist, pengguna dapat mengisi **harga** dan **link pembelian** secara opsional. Jika diisi, nominal dan tautan **Lihat link pembelian** tampil di bawah nama item—misalnya untuk item “Kebaya”. Harga harus lebih dari nol; tautan dibatasi ke URL `http://` atau `https://` dan dibuka di tab baru dengan `noopener noreferrer`.
 
 ### 4. Alur Pernikahan / Alur Acara (`alur-pernikahan.html`)
 
@@ -239,7 +240,7 @@ Halaman `akad-resepsi.html` menampilkan checklist operasional hari-H secara kond
 
 Semua halaman memakai **satu modal form bersama** (`WP_UI.openFormModal` di `js/ui.js`) untuk tambah / edit / hapus, sehingga perilakunya konsisten:
 
-- Field wajib divalidasi (isian yang hanya berisi spasi ditolak); tipe *daftar* diisi satu item per baris.
+- Field wajib divalidasi (isian yang hanya berisi spasi ditolak). Tipe *daftar* pada fitur yang mendukung input massal diisi satu item per baris; checklist Peta Persiapan ditambahkan satu per satu agar harga dan link pembelian dapat dicatat untuk setiap item.
 - Tombol **Hapus** di dalam modal selalu meminta konfirmasi.
 - Halaman yang isinya berasal dari template (**Peta Persiapan, Alur Acara, Seserahan, Acara**) memiliki tombol **↺ Kembalikan ke bawaan** sebagai jaring pengaman.
 - Daftar yang sengaja dikosongkan tetap kosong setelah reload (tidak otomatis kembali ke isi bawaan).
@@ -247,7 +248,7 @@ Semua halaman memakai **satu modal form bersama** (`WP_UI.openFormModal` di `js/
 
 | Data | Penyimpanan (Cloud) | Key `event_settings` |
 | --- | --- | --- |
-| Tahap & checklist Peta Persiapan | `event_settings` | `wp_checklist_kua` |
+| Tahap & checklist Peta Persiapan (termasuk `price` dan `purchaseLink` per item) | `event_settings` | `wp_checklist_kua` |
 | Langkah Alur Acara | `event_settings` | `wp_alur` |
 | Kategori & item Seserahan | `event_settings` | `wp_seserahan` |
 | Tugas Hari-H (Acara) | `event_settings` | `wp_event_tasks` |
@@ -277,7 +278,7 @@ Aplikasi diuji pada lebar **360px, 390px (HP), 768px (tablet), dan 1360px (deskt
 ## Keamanan & Data
 
 - Semua tabel memakai **Row Level Security**: pengguna hanya bisa membaca/mengubah data miliknya (`event_id` milik `auth.uid()`).
-- Semua teks buatan pengguna di-escape sebelum ditampilkan (aman dari HTML/script injection); link pembelian hanya menerima `http(s)`.
+- Semua teks buatan pengguna di-escape sebelum ditampilkan (aman dari HTML/script injection); link pembelian pada Seserahan dan item Peta Persiapan hanya menerima `http(s)`.
 - **Salinan data di browser tidak terbawa ke akun lain**: logout akun Cloud menghapus semua data aplikasi di `localStorage`, dan bila akun lain login di perangkat yang sama, data lokal akun sebelumnya (termasuk sisa Mode Demo) dibersihkan lebih dulu. Logout Mode Demo hanya menghapus sesi karena datanya hanya ada di perangkat.
 - Anon key Supabase di `js/supabase.js` memang bersifat publik; keamanan data bergantung pada RLS.
 
@@ -503,7 +504,8 @@ Gunakan daftar berikut setiap kali ada perubahan besar (uji di Mode Demo dan aku
 **Fungsional**
 - [ ] Login, daftar, Mode Demo, dan logout berjalan; halaman tanpa sesi dialihkan ke `login.html`.
 - [ ] Ganti jenis acara lewat badge header / Akun: isi setiap halaman berganti dan data kedua jenis acara tidak tercampur.
-- [ ] Peta Persiapan: tambah/edit/hapus item & tahap, centang item (status tahap ikut berubah), Kembalikan ke bawaan.
+- [ ] Peta Persiapan: tambah item dengan nama, harga, dan link pembelian; pastikan detail tampil di bawah nama item dan tautan terbuka di tab baru.
+- [ ] Peta Persiapan: edit/hapus item & tahap, centang item (status tahap ikut berubah), Kembalikan ke bawaan; item lama tanpa harga/link tetap tampil normal.
 - [ ] Alur Acara: tambah/edit/hapus langkah beserta daftar dokumen.
 - [ ] Budget: tambah/edit/hapus pengeluaran (hanya baris yang dipilih yang terhapus), ubah total budget.
 - [ ] Tabungan: catat, edit, hapus, filter penabung; angka di halaman Budget (Dana dari Tabungan) ikut berubah; status *Belum bayar* tidak mengurangi saldo.

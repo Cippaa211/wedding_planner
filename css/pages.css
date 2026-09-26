@@ -672,6 +672,34 @@
   transition: var(--transition);
 }
 
+.checklist-item-content {
+  min-width: 0;
+}
+
+.checklist-item-details {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin-top: 4px;
+  font-size: var(--font-size-xs);
+}
+
+.checklist-item-price {
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.checklist-item-link {
+  color: var(--primary);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.checklist-item-link:hover {
+  text-decoration: underline;
+}
+
 .checklist-row.completed .checklist-text {
   text-decoration: line-through;
   color: var(--text-light);

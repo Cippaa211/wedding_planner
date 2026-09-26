@@ -222,6 +222,41 @@ function escapeHtml(value) {
   }[char]));
 }
 
+/** Hanya tautan http(s) yang boleh ditampilkan sebagai tautan pembelian. */
+function safePurchaseUrl(value) {
+  if (!value) return '';
+  try {
+    const url = new URL(value);
+    return ['http:', 'https:'].includes(url.protocol) ? url.href : '';
+  } catch (_) {
+    return '';
+  }
+}
+
+function getItemMetadata({ price, purchaseLink }) {
+  if (price !== null && (!Number.isFinite(price) || price <= 0)) {
+    throw new Error('Harga harus lebih dari 0. Kosongkan bila belum ada harga.');
+  }
+  const cleanLink = safePurchaseUrl(purchaseLink);
+  if (purchaseLink && !cleanLink) {
+    throw new Error('Link pembelian harus berupa URL http:// atau https:// yang valid.');
+  }
+  return { price: price ?? null, purchaseLink: cleanLink };
+}
+
+function renderItemDetails(item) {
+  const hasPrice = Number.isFinite(Number(item.price)) && Number(item.price) > 0;
+  const purchaseUrl = safePurchaseUrl(item.purchaseLink);
+  if (!hasPrice && !purchaseUrl) return '';
+
+  return `
+    <div class="checklist-item-details">
+      ${hasPrice ? `<span class="checklist-item-price">${WP_Utils.formatRupiah(Number(item.price))}</span>` : ''}
+      ${purchaseUrl ? `<a class="checklist-item-link" href="${escapeHtml(purchaseUrl)}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()">Lihat link pembelian</a>` : ''}
+    </div>
+  `;
+}
+
 function getDefaultStages() {
   const defaults = WP_Utils.getEventType() === 'engagement' ? DEFAULT_ENGAGEMENT_STAGES : DEFAULT_STAGES;
   return JSON.parse(JSON.stringify(defaults));
@@ -400,7 +435,10 @@ function renderActiveStageChecklist() {
         <div class="checklist-custom-box">
           ${item.completed ? '✓' : ''}
         </div>
-        <span class="checklist-text">${escapeHtml(item.text)}</span>
+        <div class="checklist-item-content">
+          <span class="checklist-text">${escapeHtml(item.text)}</span>
+          ${renderItemDetails(item)}
+        </div>
       </div>
       <div class="row-actions" onclick="event.stopPropagation()">
         <button type="button" class="btn-icon-action" title="Edit item" onclick="WP_Persiapan.openEditItemModal('${item.id}')">
@@ -461,18 +499,22 @@ function openAddItemModal() {
     title: `Tambah Item — ${stage.name}`,
     submitLabel: 'Tambah',
     fields: [
-      { name: 'texts', label: 'Nama item', type: 'lines', required: true,
-        placeholder: 'Contoh:\nFotokopi KTP kedua catin\nPas foto 2x3 latar biru',
-        hint: 'Bisa menambahkan beberapa item sekaligus, satu item per baris.' }
+      { name: 'text', label: 'Nama item', type: 'text', required: true, placeholder: 'Contoh: Kebaya akad' },
+      { name: 'price', label: 'Harga', type: 'number', placeholder: 'Contoh: 750000', hint: 'Opsional. Isi tanpa titik atau koma.' },
+      { name: 'purchaseLink', label: 'Link pembelian', type: 'url', placeholder: 'https://…', hint: 'Opsional. Tautan tampil di bawah nama item.' }
     ],
-    onSubmit: ({ texts }) => {
-      texts.forEach((text, i) => {
-        stage.items.push({ id: `item-${Date.now()}-${i}`, text, completed: false });
+    onSubmit: ({ text, price, purchaseLink }) => {
+      const metadata = getItemMetadata({ price, purchaseLink });
+      stage.items.push({
+        id: `item-${Date.now()}`,
+        text,
+        completed: false,
+        ...metadata
       });
       recomputeStageStatus(stage);
       saveStagesData();
       renderAll();
-      WP_UI.showToast(`${texts.length} item ditambahkan ke ${stage.name}.`, 'success');
+      WP_UI.showToast(`Item ditambahkan ke ${stage.name}.`, 'success');
     }
   });
 }
@@ -484,10 +526,14 @@ function openEditItemModal(itemId) {
   WP_UI.openFormModal({
     title: 'Edit Item',
     fields: [
-      { name: 'text', label: 'Nama item', type: 'text', value: item.text, required: true }
+      { name: 'text', label: 'Nama item', type: 'text', value: item.text, required: true },
+      { name: 'price', label: 'Harga', type: 'number', value: item.price ?? '', placeholder: 'Contoh: 750000', hint: 'Opsional. Isi tanpa titik atau koma.' },
+      { name: 'purchaseLink', label: 'Link pembelian', type: 'url', value: item.purchaseLink || '', placeholder: 'https://…', hint: 'Opsional. Tautan tampil di bawah nama item.' }
     ],
-    onSubmit: ({ text }) => {
+    onSubmit: ({ text, price, purchaseLink }) => {
+      const metadata = getItemMetadata({ price, purchaseLink });
       item.text = text;
+      Object.assign(item, metadata);
       saveStagesData();
       renderAll();
       WP_UI.showToast('Item diperbarui.', 'success');
