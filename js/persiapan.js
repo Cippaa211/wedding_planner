@@ -213,10 +213,26 @@ const DEFAULT_ENGAGEMENT_STAGES = [
 let currentStageId = null;
 let stagesData = [];
 
+// Warna ikon tahap baru bergiliran dari palet yang tersedia di CSS (.stage-icon-circle.*)
+const STAGE_COLORS = ['red', 'yellow', 'blue', 'purple', 'pink', 'indigo'];
+
 function escapeHtml(value) {
   return String(value ?? '').replace(/[&<>"']/g, char => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
   }[char]));
+}
+
+function getDefaultStages() {
+  const defaults = WP_Utils.getEventType() === 'engagement' ? DEFAULT_ENGAGEMENT_STAGES : DEFAULT_STAGES;
+  return JSON.parse(JSON.stringify(defaults));
+}
+
+function getDefaultListTitle() {
+  return WP_Utils.getEventType() === 'engagement' ? 'Checklist Persiapan' : 'Dokumen yang Harus Dibawa';
+}
+
+function getCurrentStage() {
+  return stagesData.find(s => s.id === currentStageId);
 }
 
 /**
@@ -239,23 +255,20 @@ async function initPersiapan() {
   }
 
   await loadStagesData();
-  renderStepperCards();
-  renderActiveStageChecklist();
+  renderAll();
 }
 
 /**
  * Load Stages from LocalStorage / Seed
  */
 async function loadStagesData() {
-  const eventType = WP_Utils.getEventType();
   // Key otomatis diberi prefix engagement_ oleh WP_DataStore bila event_type = engagement
   const saved = await WP_DataStore.loadPageState(WP_Utils.STORAGE_KEYS.CHECKLIST_KUA, null);
 
   if (saved && Array.isArray(saved) && saved.length > 0) {
     stagesData = saved;
   } else {
-    const defaults = eventType === 'engagement' ? DEFAULT_ENGAGEMENT_STAGES : DEFAULT_STAGES;
-    stagesData = JSON.parse(JSON.stringify(defaults));
+    stagesData = getDefaultStages();
     saveStagesData();
   }
 
@@ -270,6 +283,18 @@ function saveStagesData() {
   return WP_DataStore.savePageState(WP_Utils.STORAGE_KEYS.CHECKLIST_KUA, stagesData);
 }
 
+/** Status tahap mengikuti item: semua selesai = selesai, sebagian = proses */
+function recomputeStageStatus(stage) {
+  if (stage.items.length === 0) return;
+  const done = stage.items.filter(i => i.completed).length;
+  stage.status = done === stage.items.length ? 'selesai' : done > 0 ? 'proses' : 'belum';
+}
+
+function renderAll() {
+  renderStepperCards();
+  renderActiveStageChecklist();
+}
+
 /**
  * Render Top Stepper Cards
  */
@@ -277,22 +302,34 @@ function renderStepperCards() {
   const container = document.getElementById('stage-stepper-container');
   if (!container) return;
 
-  container.innerHTML = stagesData.map(stage => {
+  const cardsHtml = stagesData.map(stage => {
     const isActive = stage.id === currentStageId;
-    const badgeClass = getStageBadgeClass(stage.status);
-    const badgeLabel = getStageBadgeLabel(stage.status);
+    const color = STAGE_COLORS.includes(stage.color) ? stage.color : 'blue';
 
     return `
       <div class="stage-step-card ${isActive ? 'active' : ''}" onclick="selectStage('${stage.id}')">
-        <div class="stage-icon-circle ${stage.color}">
-          <span>${stage.icon}</span>
+        <div class="stage-icon-circle ${color}">
+          <span>${escapeHtml(stage.icon)}</span>
         </div>
-        <div class="stage-title">${stage.name}</div>
-        <div class="stage-sub">${stage.subtitle}</div>
-        <span class="stage-badge ${badgeClass}">${badgeLabel}</span>
+        <div class="stage-title">${escapeHtml(stage.name)}</div>
+        <div class="stage-sub">${escapeHtml(stage.subtitle)}</div>
+        <span class="stage-badge ${getStageBadgeClass(stage.status)}">${getStageBadgeLabel(stage.status)}</span>
       </div>
     `;
   }).join('');
+
+  container.innerHTML = cardsHtml + `
+    <button type="button" class="stage-step-card add-stage" onclick="WP_Persiapan.openAddStageModal()" title="Tambah tahap baru">
+      <span class="stage-add-icon">+</span>
+      <span>Tambah Tahap</span>
+    </button>
+  `;
+
+  // Di HP stepper bisa digeser menyamping: pastikan tahap aktif terlihat di tengah
+  const active = container.querySelector('.stage-step-card.active');
+  if (active && container.scrollWidth > container.clientWidth) {
+    container.scrollLeft = active.offsetLeft - (container.clientWidth - active.offsetWidth) / 2;
+  }
 }
 
 function getStageBadgeClass(status) {
@@ -316,26 +353,27 @@ function getStageBadgeLabel(status) {
  */
 function selectStage(stageId) {
   currentStageId = stageId;
-  renderStepperCards();
-  renderActiveStageChecklist();
+  renderAll();
 }
 
 /**
  * Render Checklist of Active Stage
  */
 function renderActiveStageChecklist() {
-  const stage = stagesData.find(s => s.id === currentStageId);
+  const stage = getCurrentStage();
   if (!stage) return;
 
   // Update Headers
   const mainTitleEl = document.getElementById('stage-main-title');
   const mainDescEl = document.getElementById('stage-main-desc');
+  const listTitleEl = document.getElementById('checklist-section-title');
   const resultTextEl = document.getElementById('stage-result-text');
   const btnCompleteEl = document.getElementById('btn-complete-stage');
 
-  if (mainTitleEl) mainTitleEl.textContent = stage.mainTitle;
-  if (mainDescEl) mainDescEl.textContent = stage.mainDesc;
-  if (resultTextEl) resultTextEl.textContent = stage.resultText;
+  if (mainTitleEl) mainTitleEl.textContent = stage.mainTitle || stage.name;
+  if (mainDescEl) mainDescEl.textContent = stage.mainDesc || '';
+  if (listTitleEl) listTitleEl.textContent = stage.listTitle || getDefaultListTitle();
+  if (resultTextEl) resultTextEl.textContent = stage.resultText || '—';
 
   if (btnCompleteEl) {
     if (stage.status === 'selesai') {
@@ -351,13 +389,26 @@ function renderActiveStageChecklist() {
   const listEl = document.getElementById('checklist-items-list');
   if (!listEl) return;
 
-  listEl.innerHTML = stage.items.map((item, idx) => `
+  if (stage.items.length === 0) {
+    listEl.innerHTML = `<div style="padding: 8px 0; font-size: var(--font-size-xs); color: var(--text-muted);">Belum ada item. Klik <strong>+ Tambah Item</strong> untuk menambahkan.</div>`;
+    return;
+  }
+
+  listEl.innerHTML = stage.items.map(item => `
     <div class="checklist-row ${item.completed ? 'completed' : ''}" onclick="toggleChecklistItem('${item.id}')">
       <div class="checklist-left">
         <div class="checklist-custom-box">
           ${item.completed ? '✓' : ''}
         </div>
         <span class="checklist-text">${escapeHtml(item.text)}</span>
+      </div>
+      <div class="row-actions" onclick="event.stopPropagation()">
+        <button type="button" class="btn-icon-action" title="Edit item" onclick="WP_Persiapan.openEditItemModal('${item.id}')">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+        </button>
+        <button type="button" class="btn-icon-action danger" title="Hapus item" onclick="WP_Persiapan.deleteItem('${item.id}')">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+        </button>
       </div>
     </div>
   `).join('');
@@ -367,28 +418,15 @@ function renderActiveStageChecklist() {
  * Toggle Checklist Item
  */
 function toggleChecklistItem(itemId) {
-  const stage = stagesData.find(s => s.id === currentStageId);
+  const stage = getCurrentStage();
   if (!stage) return;
 
   const item = stage.items.find(i => i.id === itemId);
   if (item) {
     item.completed = !item.completed;
-
-    // Check if all items completed
-    const allCompleted = stage.items.every(i => i.completed);
-    const anyCompleted = stage.items.some(i => i.completed);
-
-    if (allCompleted) {
-      stage.status = 'selesai';
-    } else if (anyCompleted) {
-      stage.status = 'proses';
-    } else {
-      stage.status = 'belum';
-    }
-
+    recomputeStageStatus(stage);
     saveStagesData();
-    renderStepperCards();
-    renderActiveStageChecklist();
+    renderAll();
   }
 }
 
@@ -396,7 +434,7 @@ function toggleChecklistItem(itemId) {
  * Mark Current Stage as Completed
  */
 function completeCurrentStage() {
-  const stage = stagesData.find(s => s.id === currentStageId);
+  const stage = getCurrentStage();
   if (!stage) return;
 
   // Mark all items as completed
@@ -412,8 +450,154 @@ function completeCurrentStage() {
     currentStageId = stagesData[currentIndex + 1].id;
   }
 
-  renderStepperCards();
-  renderActiveStageChecklist();
+  renderAll();
+}
+
+// ─── Edit Item Checklist ─────────────────────────────────────────────────────
+function openAddItemModal() {
+  const stage = getCurrentStage();
+  if (!stage) return;
+  WP_UI.openFormModal({
+    title: `Tambah Item — ${stage.name}`,
+    submitLabel: 'Tambah',
+    fields: [
+      { name: 'texts', label: 'Nama item', type: 'lines', required: true,
+        placeholder: 'Contoh:\nFotokopi KTP kedua catin\nPas foto 2x3 latar biru',
+        hint: 'Bisa menambahkan beberapa item sekaligus, satu item per baris.' }
+    ],
+    onSubmit: ({ texts }) => {
+      texts.forEach((text, i) => {
+        stage.items.push({ id: `item-${Date.now()}-${i}`, text, completed: false });
+      });
+      recomputeStageStatus(stage);
+      saveStagesData();
+      renderAll();
+      WP_UI.showToast(`${texts.length} item ditambahkan ke ${stage.name}.`, 'success');
+    }
+  });
+}
+
+function openEditItemModal(itemId) {
+  const stage = getCurrentStage();
+  const item = stage?.items.find(i => i.id === itemId);
+  if (!item) return;
+  WP_UI.openFormModal({
+    title: 'Edit Item',
+    fields: [
+      { name: 'text', label: 'Nama item', type: 'text', value: item.text, required: true }
+    ],
+    onSubmit: ({ text }) => {
+      item.text = text;
+      saveStagesData();
+      renderAll();
+      WP_UI.showToast('Item diperbarui.', 'success');
+    },
+    onDelete: () => removeItem(stage, itemId),
+    deleteConfirm: `Hapus "${item.text}" dari daftar?`
+  });
+}
+
+function deleteItem(itemId) {
+  const stage = getCurrentStage();
+  const item = stage?.items.find(i => i.id === itemId);
+  if (!item) return;
+  if (!confirm(`Hapus "${item.text}" dari daftar?`)) return;
+  removeItem(stage, itemId);
+}
+
+function removeItem(stage, itemId) {
+  stage.items = stage.items.filter(i => i.id !== itemId);
+  recomputeStageStatus(stage);
+  saveStagesData();
+  renderAll();
+  WP_UI.showToast('Item dihapus.', 'info');
+}
+
+// ─── Edit Tahap ──────────────────────────────────────────────────────────────
+function stageFields(stage = {}) {
+  return [
+    { name: 'name', label: 'Nama tahap (kartu)', type: 'text', value: stage.name, required: true, placeholder: 'Contoh: KUA' },
+    { name: 'subtitle', label: 'Keterangan singkat (kartu)', type: 'text', value: stage.subtitle, placeholder: 'Contoh: Pendaftaran Nikah' },
+    { name: 'icon', label: 'Ikon (emoji)', type: 'text', value: stage.icon || '📌', placeholder: '📌' },
+    { name: 'mainTitle', label: 'Judul lengkap', type: 'text', value: stage.mainTitle, placeholder: 'Contoh: KUA — Pendaftaran Nikah' },
+    { name: 'mainDesc', label: 'Deskripsi', type: 'textarea', value: stage.mainDesc },
+    { name: 'listTitle', label: 'Judul daftar checklist', type: 'text', value: stage.listTitle || getDefaultListTitle() },
+    { name: 'resultText', label: 'Keterangan yang didapatkan', type: 'text', value: stage.resultText, placeholder: 'Contoh: Jadwal resmi akad dari KUA' }
+  ];
+}
+
+function applyStageValues(stage, values) {
+  stage.name = values.name;
+  stage.subtitle = values.subtitle;
+  stage.icon = values.icon || '📌';
+  stage.mainTitle = values.mainTitle || values.name;
+  stage.mainDesc = values.mainDesc;
+  stage.listTitle = values.listTitle || getDefaultListTitle();
+  stage.resultText = values.resultText;
+}
+
+function openEditStageModal() {
+  const stage = getCurrentStage();
+  if (!stage) return;
+  WP_UI.openFormModal({
+    title: `Edit Tahap — ${stage.name}`,
+    fields: stageFields(stage),
+    onSubmit: values => {
+      applyStageValues(stage, values);
+      saveStagesData();
+      renderAll();
+      WP_UI.showToast('Tahap diperbarui.', 'success');
+    },
+    onDelete: () => deleteStage(stage.id),
+    deleteConfirm: `Hapus tahap "${stage.name}" beserta ${stage.items.length} item checklist-nya?`
+  });
+}
+
+function openAddStageModal() {
+  WP_UI.openFormModal({
+    title: 'Tambah Tahap Baru',
+    submitLabel: 'Tambah',
+    fields: [
+      ...stageFields(),
+      { name: 'items', label: 'Item checklist', type: 'lines', placeholder: 'Satu item per baris' }
+    ],
+    onSubmit: values => {
+      const stage = {
+        id: `stage-${Date.now()}`,
+        status: 'belum',
+        color: STAGE_COLORS[stagesData.length % STAGE_COLORS.length],
+        items: values.items.map((text, i) => ({ id: `item-${Date.now()}-${i}`, text, completed: false }))
+      };
+      applyStageValues(stage, values);
+      stagesData.push(stage);
+      currentStageId = stage.id;
+      saveStagesData();
+      renderAll();
+      WP_UI.showToast(`Tahap "${stage.name}" ditambahkan.`, 'success');
+    }
+  });
+}
+
+function deleteStage(stageId) {
+  if (stagesData.length <= 1) {
+    WP_UI.showToast('Minimal harus ada satu tahap.', 'error');
+    return false;
+  }
+  const index = stagesData.findIndex(s => s.id === stageId);
+  const [removed] = stagesData.splice(index, 1);
+  currentStageId = (stagesData[index] || stagesData[index - 1]).id;
+  saveStagesData();
+  renderAll();
+  WP_UI.showToast(`Tahap "${removed.name}" dihapus.`, 'info');
+}
+
+async function resetToDefault() {
+  if (!confirm('Kembalikan semua tahap dan checklist ke daftar bawaan? Semua perubahan & centang di halaman ini akan hilang.')) return;
+  stagesData = getDefaultStages();
+  currentStageId = (stagesData.find(s => s.status !== 'selesai') || stagesData[0]).id;
+  await saveStagesData();
+  renderAll();
+  WP_UI.showToast('Peta Persiapan dikembalikan ke bawaan.', 'info');
 }
 
 /**
@@ -423,8 +607,7 @@ function completeCurrentStage() {
 async function getStagesSnapshot() {
   const saved = await WP_DataStore.loadPageState(WP_Utils.STORAGE_KEYS.CHECKLIST_KUA, null);
   if (Array.isArray(saved) && saved.length > 0) return saved;
-  const defaults = WP_Utils.getEventType() === 'engagement' ? DEFAULT_ENGAGEMENT_STAGES : DEFAULT_STAGES;
-  return JSON.parse(JSON.stringify(defaults));
+  return getDefaultStages();
 }
 
 window.WP_Persiapan = {
@@ -432,5 +615,11 @@ window.WP_Persiapan = {
   getStagesSnapshot,
   selectStage,
   toggleChecklistItem,
-  completeCurrentStage
+  completeCurrentStage,
+  openAddItemModal,
+  openEditItemModal,
+  deleteItem,
+  openEditStageModal,
+  openAddStageModal,
+  resetToDefault
 };

@@ -9,6 +9,7 @@ const STORAGE_KEYS = {
   SESERAHAN: 'wp_seserahan',
   CHECKLIST_KUA: 'wp_checklist_kua',
   GUESTS: 'wp_guests',
+  SAVINGS: 'wp_savings', // mode Lokal/Demo; mode Cloud memakai tabel savings_entries
   OWNER: 'wp_owner' // id user pemilik data lokal (cache) saat ini
 };
 
@@ -129,6 +130,20 @@ function fromDateTimeLocalValue(value) {
   if (!value) return '';
   const date = new Date(value);
   return isNaN(date.getTime()) ? '' : date.toISOString();
+}
+
+/**
+ * Tanggal hari ini (YYYY-MM-DD) menurut zona waktu perangkat.
+ * toISOString() memakai UTC, sehingga sebelum 07.00 WIB tanggalnya masih kemarin.
+ */
+function todayLocalDate() {
+  return toDateTimeLocalValue(new Date()).slice(0, 10);
+}
+
+/** 'YYYY-MM-DD' -> Date lokal (new Date('YYYY-MM-DD') dibaca sebagai UTC) */
+function parseLocalDate(value) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(value || ''));
+  return match ? new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3])) : new Date(value);
 }
 
 /**
@@ -267,6 +282,8 @@ window.WP_Utils = {
   calculateCountdown,
   toDateTimeLocalValue,
   fromDateTimeLocalValue,
+  todayLocalDate,
+  parseLocalDate,
   getStorage,
   setStorage,
   clearAppStorage,

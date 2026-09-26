@@ -4,6 +4,7 @@
 
 let expensesList = [];
 let totalBudgetAmount = 50000000;
+let savingsTotalForBudget = 0;
 
 function escapeHtml(value) {
   return String(value ?? '').replace(/[&<>"']/g, char => ({
@@ -56,7 +57,7 @@ async function initBudgetPage() {
       : 'Budget Pernikahan — Kelola anggaran, catat pengeluaran, dan kontrol alokasi dana persiapan pernikahan.';
   }
 
-  await loadBudgetData();
+  await Promise.all([loadBudgetData(), loadSavingsTotal()]);
   populateCategoryDropdown();
   renderBudgetStats();
   renderExpenseTable();
@@ -133,6 +134,34 @@ function loadLocalExpenses(data, eventType) {
 }
 
 /**
+ * Total tabungan CPP & CPW (halaman Tabungan) untuk kartu "Dana dari Tabungan"
+ */
+async function loadSavingsTotal() {
+  const { entries, error } = await WP_Savings.loadEntries();
+  if (error) console.warn('Tabungan belum dapat dimuat:', error);
+  savingsTotalForBudget = WP_Savings.summarize(entries).total;
+}
+
+function renderSavingsFunding() {
+  const funding = WP_Savings.computeFunding({
+    savingsTotal: savingsTotalForBudget,
+    totalBudget: totalBudgetAmount,
+    expenses: expensesList
+  });
+  const fmt = WP_Utils.formatRupiah;
+  const set = (id, value) => { const el = document.getElementById(id); if (el) el.textContent = value; };
+
+  set('budget-savings-total', fmt(funding.savingsTotal));
+  set('budget-savings-paid', fmt(funding.paid));
+  set('budget-savings-available', fmt(funding.available));
+  document.getElementById('budget-savings-available')?.classList.toggle('negative', funding.available < 0);
+
+  set('budget-savings-hint', funding.available < 0
+    ? `Pengeluaran yang sudah dibayar melebihi tabungan ${fmt(Math.abs(funding.available))}.`
+    : `Tabungan sudah menutup ${funding.progress}% dari Total Budget.`);
+}
+
+/**
  * Save Budget Data
  */
 function saveBudgetData() {
@@ -156,6 +185,9 @@ function renderBudgetStats() {
   if (totalBudgetEl) totalBudgetEl.textContent = WP_Utils.formatRupiah(totalBudgetAmount);
   if (totalSpentEl) totalSpentEl.textContent = WP_Utils.formatRupiah(totalSpent);
   if (remainingBudgetEl) remainingBudgetEl.textContent = WP_Utils.formatRupiah(remaining);
+
+  // Setiap perubahan pengeluaran / total budget ikut memperbarui kartu tabungan
+  renderSavingsFunding();
 }
 
 /**
@@ -179,18 +211,112 @@ function renderExpenseTable() {
   tbody.innerHTML = expensesList.map((item, index) => `
     <tr>
       <td class="expense-date">${escapeHtml(item.date)}</td>
-      <td class="expense-name">${escapeHtml(item.name)}</td>
-      <td>
+      <td class="expense-name">
+        <div>${escapeHtml(item.name)}</div>
+        <span class="expense-status ${getStatusClass(item.status)}">${escapeHtml(item.status || 'Lunas')}</span>
+      </td>
+      <td class="expense-category">
         <span class="badge-category ${getCategoryBadgeClass(item.category)}">${escapeHtml(item.category)}</span>
       </td>
       <td class="expense-amount">${WP_Utils.formatRupiah(item.amount)}</td>
-      <td>
-        <button type="button" class="btn-table-action" onclick="deleteExpense('${item.id || index}')" title="Hapus Pengeluaran">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
-        </button>
+      <td class="expense-actions">
+        <div class="row-actions">
+          <button type="button" class="btn-icon-action" onclick="WP_Budget.openEditExpenseModal('${item.id || index}')" title="Edit Pengeluaran">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+          </button>
+          <button type="button" class="btn-table-action" onclick="deleteExpense('${item.id || index}')" title="Hapus Pengeluaran">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+          </button>
+        </div>
       </td>
     </tr>
   `).join('');
+}
+
+function getStatusClass(status) {
+  if (status === 'DP') return 'dp';
+  if (status === 'Belum bayar') return 'belum';
+  return 'lunas';
+}
+
+/** Cari berdasarkan id; nomor baris hanya untuk data lama yang tidak memiliki id */
+function findExpense(itemId) {
+  const key = String(itemId);
+  return expensesList.find(item => item.id !== undefined && item.id !== null && String(item.id) === key)
+    || expensesList.find((item, index) => !item.id && String(index) === key);
+}
+
+/**
+ * Edit Expense
+ */
+function openEditExpenseModal(itemId) {
+  const item = findExpense(itemId);
+  if (!item) return;
+
+  const eventType = WP_Utils.getEventType();
+  const categories = WP_Utils.BUDGET_CATEGORIES[eventType] || WP_Utils.BUDGET_CATEGORIES.wedding;
+  // Kategori lama yang tidak ada di daftar event aktif tetap bisa dipilih
+  const categoryOptions = [...new Set([...categories, item.category || 'Lain-lain'])];
+
+  WP_UI.openFormModal({
+    title: 'Edit Pengeluaran',
+    fields: [
+      { name: 'name', label: 'Nama Pengeluaran', type: 'text', value: item.name, required: true },
+      { name: 'category', label: 'Kategori', type: 'select', value: item.category,
+        options: categoryOptions.map(c => ({ value: c, label: c })) },
+      { name: 'amount', label: 'Nominal (Rp)', type: 'number', value: item.amount, required: true },
+      { name: 'date', label: 'Tanggal', type: 'date', value: item.date },
+      { name: 'status', label: 'Status Pembayaran', type: 'select', value: item.status || 'Lunas',
+        options: [
+          { value: 'Lunas', label: 'Lunas' },
+          { value: 'DP', label: 'DP (Uang Muka)' },
+          { value: 'Belum bayar', label: 'Belum Dibayar' }
+        ] },
+      { name: 'vendor', label: 'Vendor', type: 'text', value: item.vendor === '-' ? '' : item.vendor }
+    ],
+    onSubmit: values => saveEditedExpense(item, values),
+    onDelete: () => removeExpense(itemId),
+    deleteConfirm: `Hapus pengeluaran "${item.name}"?`
+  });
+}
+
+async function saveEditedExpense(item, values) {
+  const updated = {
+    name: values.name,
+    category: values.category,
+    amount: Number(values.amount) || 0,
+    date: values.date || item.date,
+    status: values.status,
+    vendor: values.vendor
+  };
+
+  const client = WP_Supabase.getClient();
+  const session = WP_Auth.getCurrentSession();
+  if (WP_Supabase.isConfigured() && client && session?.eventId) {
+    const { error } = await client
+      .from('budget_items')
+      .update({
+        name: updated.name,
+        category: updated.category,
+        actual_amount: updated.amount,
+        planned_amount: updated.amount,
+        payment_status: updated.status,
+        expense_date: updated.date,
+        vendor_name: updated.vendor || null
+      })
+      .eq('id', item.id);
+    if (error) {
+      WP_UI.showToast(`Pengeluaran tidak tersimpan: ${error.message}`, 'error');
+      return false;
+    }
+  }
+
+  Object.assign(item, updated);
+  saveBudgetData();
+  renderBudgetStats();
+  renderExpenseTable();
+  renderCategoryBreakdown();
+  WP_UI.showToast(`Pengeluaran "${updated.name}" diperbarui.`, 'success');
 }
 
 function getCategoryBadgeClass(category) {
@@ -291,7 +417,7 @@ function openAddExpenseModal() {
   const modal = document.getElementById('modal-add-expense');
   const dateInput = document.getElementById('exp-date');
   if (dateInput) {
-    dateInput.value = new Date().toISOString().split('T')[0];
+    dateInput.value = WP_Utils.todayLocalDate();
   }
   if (modal) modal.classList.add('open');
 }
@@ -323,7 +449,7 @@ async function handleAddExpenseSubmit(e) {
   const name = document.getElementById('exp-name').value;
   const category = document.getElementById('exp-category').value;
   const amount = Number(document.getElementById('exp-amount').value) || 0;
-  const date = document.getElementById('exp-date').value || new Date().toISOString().split('T')[0];
+  const date = document.getElementById('exp-date').value || WP_Utils.todayLocalDate();
   const status = document.getElementById('exp-status').value || 'Lunas';
   const vendor = document.getElementById('exp-vendor').value || '';
 
@@ -420,6 +546,12 @@ async function handleEditBudgetSubmit(e) {
  */
 async function deleteExpense(itemId) {
   if (!confirm('Apakah Anda yakin ingin menghapus pengeluaran ini?')) return;
+  await removeExpense(itemId);
+}
+
+async function removeExpense(itemId) {
+  const target = findExpense(itemId);
+  if (!target) return;
 
   const client = WP_Supabase.getClient();
   const session = WP_Auth.getCurrentSession();
@@ -428,17 +560,18 @@ async function deleteExpense(itemId) {
       const { error } = await client
         .from('budget_items')
         .delete()
-        .eq('id', itemId);
+        .eq('id', target.id);
       if (error) {
         WP_UI.showToast(`Pengeluaran tidak dapat dihapus: ${error.message}`, 'error');
-        return;
+        return false;
       }
     } catch (err) {
       console.warn('Supabase delete error note:', err);
     }
   }
 
-  expensesList = expensesList.filter((item, index) => item.id !== itemId && String(index) !== itemId);
+  // Hapus tepat satu baris (sebelumnya id '2' juga ikut menghapus baris ber-index 2)
+  expensesList = expensesList.filter(item => item !== target);
   saveBudgetData();
 
   renderBudgetStats();
@@ -456,5 +589,6 @@ window.WP_Budget = {
   closeEditBudgetModal,
   handleAddExpenseSubmit,
   handleEditBudgetSubmit,
+  openEditExpenseModal,
   deleteExpense
 };

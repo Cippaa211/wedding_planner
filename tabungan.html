@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#2563EB">
+  <title>Tabungan — Wedding Planner</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/global.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/pages.css">
+</head>
+<body>
+
+  <div class="app-container">
+    <div id="sidebar-container"></div>
+
+    <div class="main-wrapper">
+      <div id="header-container"></div>
+
+      <main class="main-content">
+        <div class="savings-page-container">
+
+          <!-- Page Header -->
+          <div class="page-header-row">
+            <div class="page-header-title">
+              <h2>Tabungan 🐷</h2>
+              <p>Catat uang yang terkumpul dari CPP & CPW — kapan saja, harian, mingguan, atau bulanan.</p>
+            </div>
+            <button type="button" class="btn btn-primary" onclick="WP_Tabungan.openAddModal()">+ Catat Tabungan</button>
+          </div>
+
+          <!-- 1. Ringkasan -->
+          <div class="savings-stats-grid">
+            <div class="savings-stat-card cpp">
+              <div class="savings-stat-label" id="sav-label-cpp">Tabungan CPP</div>
+              <div class="savings-stat-amount" id="sav-cpp-amount">Rp 0</div>
+              <div class="savings-stat-desc" id="sav-cpp-count">0 kali menabung</div>
+              <button type="button" class="savings-quick-add" onclick="WP_Tabungan.openAddModal('cpp')">+ Tambah</button>
+            </div>
+            <div class="savings-stat-card cpw">
+              <div class="savings-stat-label" id="sav-label-cpw">Tabungan CPW</div>
+              <div class="savings-stat-amount" id="sav-cpw-amount">Rp 0</div>
+              <div class="savings-stat-desc" id="sav-cpw-count">0 kali menabung</div>
+              <button type="button" class="savings-quick-add" onclick="WP_Tabungan.openAddModal('cpw')">+ Tambah</button>
+            </div>
+            <div class="savings-stat-card total">
+              <div class="savings-stat-label">Total Terkumpul</div>
+              <div class="savings-stat-amount" id="sav-total-amount">Rp 0</div>
+              <div class="savings-stat-desc" id="sav-total-desc">0% dari Total Budget</div>
+            </div>
+            <div class="savings-stat-card available">
+              <div class="savings-stat-label">Saldo Tersedia</div>
+              <div class="savings-stat-amount" id="sav-available-amount">Rp 0</div>
+              <div class="savings-stat-desc" id="sav-available-desc">Tabungan dikurangi pengeluaran yang sudah dibayar</div>
+            </div>
+          </div>
+
+          <!-- 2. Integrasi dengan Budget -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title-group">
+                <div class="card-title-icon">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
+                </div>
+                <div>
+                  <h3 class="card-title">Progres Tabungan vs Budget</h3>
+                  <p class="card-subtitle">Target tabungan mengikuti Total Budget di halaman Budget.</p>
+                </div>
+              </div>
+              <a href="budget.html" class="card-action-link">Buka Budget →</a>
+            </div>
+
+            <div class="savings-progress">
+              <div class="savings-progress-top">
+                <span id="sav-progress-label">Rp 0 dari Rp 0 (0%)</span>
+              </div>
+              <div class="savings-progress-track">
+                <div class="savings-progress-bar" id="sav-progress-bar"></div>
+              </div>
+              <div class="savings-progress-hint" id="sav-progress-hint"></div>
+            </div>
+
+            <div class="savings-split">
+              <div class="savings-split-title">Kontribusi CPP & CPW</div>
+              <div class="savings-split-track">
+                <div class="savings-split-bar cpp" id="sav-split-cpp"></div>
+                <div class="savings-split-bar cpw" id="sav-split-cpw"></div>
+              </div>
+              <div class="savings-split-legend">
+                <span><i class="dot cpp"></i><span id="sav-split-cpp-label">CPP 0%</span></span>
+                <span><i class="dot cpw"></i><span id="sav-split-cpw-label">CPW 0%</span></span>
+              </div>
+            </div>
+
+            <div class="savings-fund-grid">
+              <div class="savings-fund-item">
+                <span>Total Budget</span>
+                <strong id="sav-fund-budget">Rp 0</strong>
+              </div>
+              <div class="savings-fund-item">
+                <span>Sudah dibayar (Lunas/DP)</span>
+                <strong id="sav-fund-paid">Rp 0</strong>
+              </div>
+              <div class="savings-fund-item">
+                <span>Belum dibayar</span>
+                <strong id="sav-fund-unpaid">Rp 0</strong>
+              </div>
+              <div class="savings-fund-item">
+                <span>Kekurangan menuju target</span>
+                <strong id="sav-fund-shortfall">Rp 0</strong>
+              </div>
+            </div>
+          </div>
+
+          <!-- 3. Riwayat -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title-group">
+                <div class="card-title-icon">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                </div>
+                <div>
+                  <h3 class="card-title">Riwayat Tabungan</h3>
+                  <p class="card-subtitle">Dikelompokkan per bulan, terbaru di atas.</p>
+                </div>
+              </div>
+              <select id="sav-filter" class="seserahan-filter-select" onchange="WP_Tabungan.onFilterChange(this.value)">
+                <option value="all">Semua Penabung</option>
+                <option value="cpp">CPP</option>
+                <option value="cpw">CPW</option>
+              </select>
+            </div>
+            <div id="sav-history"></div>
+          </div>
+
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/supabase.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/layout.js"></script>
+  <script src="js/savings.js"></script>
+  <script src="js/tabungan.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      await WP_Auth.requireAuth();
+      WP_Layout.renderSidebar('tabungan');
+      await WP_Tabungan.initTabungan();
+    });
+  </script>
+</body>
+</html>

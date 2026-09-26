@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#2563EB">
   <title>Akad &amp; Resepsi — Wedding Planner</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -29,7 +30,10 @@
             <h2 style="font-size:1.5rem; font-weight:800; color:var(--text-heading); margin-bottom:4px;">Akad &amp; Resepsi 💍</h2>
             <p style="font-size:var(--font-size-xs); color:var(--text-muted);">Checklist operasional hari-H per sesi. Centang setiap tugas yang sudah selesai.</p>
           </div>
-          <button class="btn btn-primary" onclick="WP_Event.openAddModal('pra')">+ Tambah Tugas</button>
+          <div class="header-actions-group">
+            <button type="button" class="btn-link-reset" onclick="WP_Event.resetToDefault()" title="Kembalikan tugas ke daftar bawaan">↺ Kembalikan ke bawaan</button>
+            <button class="btn btn-primary" onclick="WP_Event.openAddModal('pra')">+ Tambah Tugas</button>
+          </div>
         </div>
 
         <!-- Summary Stats -->

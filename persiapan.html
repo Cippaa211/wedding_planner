@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#2563EB">
   <title>Peta Persiapan & Administrasi — Wedding Planner</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -28,9 +29,12 @@
         <div class="persiapan-grid">
 
           <!-- Page Header -->
-          <div class="page-header-title">
-            <h2>Administrasi & Peta Persiapan</h2>
-            <p>Pantau dan selesaikan setiap tahap persiapan pernikahanmu secara teratur.</p>
+          <div class="page-header-row">
+            <div class="page-header-title">
+              <h2>Administrasi & Peta Persiapan</h2>
+              <p>Pantau dan selesaikan setiap tahap persiapan pernikahanmu secara teratur.</p>
+            </div>
+            <button type="button" class="btn-link-reset" onclick="WP_Persiapan.resetToDefault()" title="Kembalikan semua tahap & checklist ke bawaan">↺ Kembalikan ke bawaan</button>
           </div>
 
           <!-- Top Stage Stepper Cards (RT/RW, Kelurahan, Puskesmas, KUA, Akad, Resepsi) -->
@@ -40,17 +44,21 @@
 
           <!-- Active Stage Card & Checklist (KUA — Pendaftaran Nikah) -->
           <div class="stage-content-card">
-            <div class="stage-content-header">
-              <h3 class="stage-main-title" id="stage-main-title">KUA — Pendaftaran Nikah</h3>
-              <p class="stage-main-desc" id="stage-main-desc">Kelengkapan dokumen yang harus dibawa saat proses pendaftaran nikah di KUA.</p>
+            <div class="stage-content-header editable">
+              <div>
+                <h3 class="stage-main-title" id="stage-main-title">KUA — Pendaftaran Nikah</h3>
+                <p class="stage-main-desc" id="stage-main-desc">Kelengkapan dokumen yang harus dibawa saat proses pendaftaran nikah di KUA.</p>
+              </div>
+              <button type="button" class="btn btn-outline btn-sm" onclick="WP_Persiapan.openEditStageModal()">✎ Edit Tahap</button>
             </div>
 
             <!-- Documents Checklist Section -->
             <div>
-              <div class="checklist-section-title">Dokumen yang Harus Dibawa</div>
+              <div class="checklist-section-title" id="checklist-section-title">Dokumen yang Harus Dibawa</div>
               <div class="checklist-items-list" id="checklist-items-list">
                 <!-- Checklist rows rendered dynamically by JS -->
               </div>
+              <button type="button" class="btn-add-dashed" style="margin-top: 10px;" onclick="WP_Persiapan.openAddItemModal()">+ Tambah Item</button>
             </div>
 
             <!-- Output Box: Keterangan yang Didapatkan -->

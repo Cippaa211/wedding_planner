@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#2563EB">
   <title>Budget & Pengeluaran — Wedding Planner</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -81,6 +82,34 @@
             </div>
           </div>
 
+          <!-- Dana dari Tabungan (terintegrasi dengan halaman Tabungan) -->
+          <div class="card budget-savings-card">
+            <div class="card-title-group">
+              <div class="card-title-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 5c-1.5 0-2.8 1.4-3 2-3.5-1.5-11-.3-11 5 0 1.8 0 3 2 4.5V20h4v-2h3v2h4v-4c1-.5 1.7-1 2-2h2v-4h-2c0-1-.5-1.5-1-2V5z"/><path d="M2 9v1c0 1.1.9 2 2 2h1"/><path d="M16 11h.01"/></svg>
+              </div>
+              <div>
+                <h3 class="card-title">Dana dari Tabungan</h3>
+                <p class="card-subtitle" id="budget-savings-hint">Tabungan CPP & CPW yang dipakai untuk membiayai pengeluaran.</p>
+                <a href="tabungan.html" class="card-action-link" style="display: inline-block; margin-top: 6px;">Kelola Tabungan →</a>
+              </div>
+            </div>
+            <div class="budget-savings-items">
+              <div class="budget-savings-item">
+                <span>Total Tabungan</span>
+                <strong id="budget-savings-total">Rp 0</strong>
+              </div>
+              <div class="budget-savings-item">
+                <span>Sudah Dibayar (Lunas/DP)</span>
+                <strong id="budget-savings-paid">Rp 0</strong>
+              </div>
+              <div class="budget-savings-item">
+                <span>Saldo Tabungan</span>
+                <strong id="budget-savings-available">Rp 0</strong>
+              </div>
+            </div>
+          </div>
+
           <!-- 2. Daftar Pengeluaran Table Card (Slide 4 Mockup) -->
           <div class="card" id="daftar-pengeluaran-card">
             <div class="card-header">
@@ -99,7 +128,7 @@
             </div>
 
             <div class="expense-table-wrapper">
-              <table class="expense-table">
+              <table class="expense-table budget-table">
                 <thead>
                   <tr>
                     <th>Tanggal</th>
@@ -267,6 +296,7 @@
   <script src="js/supabase.js"></script>
   <script src="js/auth.js"></script>
   <script src="js/layout.js"></script>
+  <script src="js/savings.js"></script>
   <script src="js/budget.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', async () => {

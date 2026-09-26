@@ -7,6 +7,7 @@ const NAV_ITEMS = [
   { id: 'persiapan', label: 'Peta Persiapan', icon: 'map-pin', href: 'persiapan.html' },
   { id: 'alur', label: 'Alur Acara', icon: 'git-branch', href: 'alur-pernikahan.html' },
   { id: 'budget', label: 'Budget', icon: 'wallet', href: 'budget.html' },
+  { id: 'tabungan', label: 'Tabungan', icon: 'piggy-bank', href: 'tabungan.html' },
   { id: 'tamu', label: 'Tamu & Hadiah', icon: 'users', href: 'tamu-hadiah.html' },
   { id: 'akad', label: 'Acara', icon: 'gem', href: 'akad-resepsi.html' },
   { id: 'seserahan', label: 'Seserahan', icon: 'gift', href: 'seserahan.html' },
@@ -29,6 +30,8 @@ function getNavSvg(iconName) {
       return `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" x2="6" y1="3" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>`;
     case 'wallet':
       return `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/></svg>`;
+    case 'piggy-bank':
+      return `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 5c-1.5 0-2.8 1.4-3 2-3.5-1.5-11-.3-11 5 0 1.8 0 3 2 4.5V20h4v-2h3v2h4v-4c1-.5 1.7-1 2-2h2v-4h-2c0-1-.5-1.5-1-2V5z"/><path d="M2 9v1c0 1.1.9 2 2 2h1"/><path d="M16 11h.01"/></svg>`;
     case 'users':
       return `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`;
     case 'gem':
@@ -64,6 +67,9 @@ function renderSidebar(activeId) {
 
   sidebarEl.innerHTML = `
     <aside class="sidebar">
+      <button type="button" class="btn-sidebar-close" onclick="WP_UI.closeMobileSidebar()" aria-label="Tutup menu">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+      </button>
       <a href="index.html" class="brand-logo">
         <div class="brand-icon">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
@@ -111,15 +117,15 @@ function renderHeader() {
   headerEl.innerHTML = `
     <header class="top-header">
       <div class="flex items-center gap-3">
-        <button class="btn-mobile-menu" onclick="WP_UI.toggleMobileSidebar()" aria-label="Toggle Menu">
+        <button class="btn-mobile-menu" onclick="WP_UI.toggleMobileSidebar()" aria-label="Buka menu" aria-expanded="false">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
         </button>
         <div class="header-greeting">
-          <div class="flex items-center gap-2">
+          <div class="header-title-row">
             <h1>Halo, ${escapeHtml(bride)} & ${escapeHtml(groom)} 👋</h1>
             ${eventBadgeHtml}
           </div>
-          <p>Semoga hari bahagiamu berjalan lancar • ${todayStr}</p>
+          <p><span class="header-wish">Semoga hari bahagiamu berjalan lancar • </span>${todayStr}</p>
         </div>
       </div>
       <div class="header-actions">

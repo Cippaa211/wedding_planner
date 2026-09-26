@@ -131,15 +131,15 @@ function renderGuestTable() {
 
   tbody.innerHTML = filtered.map(g => `
     <tr>
-      <td>
+      <td class="guest-name-cell">
         <div style="font-weight:600; color:var(--text-heading);">${WP_ESC(g.name)}</div>
         <div style="font-size:var(--font-size-xs); color:var(--text-muted);">${WP_ESC(g.relation || '—')}</div>
       </td>
-      <td>${WP_ESC(g.invitation_type === 'fisik' ? '📄 Fisik' : '📱 Digital')}</td>
-      <td>${rsvpBadge(g.rsvp_status)}</td>
-      <td style="font-weight:600;">${g.gift_amount ? WP_Utils.formatRupiah(g.gift_amount) : '<span style="color:var(--text-light);font-style:italic;">—</span>'}</td>
-      <td style="color:var(--text-muted); font-size:var(--font-size-xs);">${WP_ESC(g.notes || '—')}</td>
-      <td>
+      <td class="guest-invite-cell">${WP_ESC(g.invitation_type === 'fisik' ? '📄 Fisik' : '📱 Digital')}</td>
+      <td class="guest-rsvp-cell">${rsvpBadge(g.rsvp_status)}</td>
+      <td class="guest-gift-cell" style="font-weight:600;">${g.gift_amount ? WP_Utils.formatRupiah(g.gift_amount) : '<span style="color:var(--text-light);font-style:italic;">—</span>'}</td>
+      <td class="guest-notes-cell ${g.notes ? '' : 'is-empty'}" style="color:var(--text-muted); font-size:var(--font-size-xs);">${WP_ESC(g.notes || '—')}</td>
+      <td class="guest-actions-cell">
         <div style="display:flex; gap:6px;">
           <button class="btn-table-action" title="Edit" onclick="WP_Guests.openEditModal('${g.id}')">✏️</button>
           <button class="btn-table-action" title="Hapus" onclick="WP_Guests.removeGuest('${g.id}')">🗑️</button>

@@ -108,13 +108,26 @@ function populateSessionOptions() {
 async function loadTasks() {
   const eventType = WP_Utils.getEventType();
   const saved = await WP_DataStore.loadPageState(EVENT_KEY, null);
-  if (Array.isArray(saved) && saved.length > 0) {
+  // Daftar kosong tetap dihormati (pengguna menghapus semua tugas), hanya null = belum pernah disimpan
+  if (Array.isArray(saved)) {
     eventTasks = saved;
   } else {
-    const defaultList = eventType === 'engagement' ? DEFAULT_ENGAGEMENT_TASKS : DEFAULT_TASKS;
-    eventTasks = JSON.parse(JSON.stringify(defaultList));
+    eventTasks = getDefaultTasks(eventType);
     saveTasks();
   }
+}
+
+function getDefaultTasks(eventType = WP_Utils.getEventType()) {
+  const defaultList = eventType === 'engagement' ? DEFAULT_ENGAGEMENT_TASKS : DEFAULT_TASKS;
+  return JSON.parse(JSON.stringify(defaultList));
+}
+
+async function resetToDefault() {
+  if (!confirm('Kembalikan semua tugas hari-H ke daftar bawaan? Semua perubahan & centang di halaman ini akan hilang.')) return;
+  eventTasks = getDefaultTasks();
+  await saveTasks();
+  renderAll();
+  WP_UI.showToast('Daftar tugas dikembalikan ke bawaan.', 'info');
 }
 
 function saveTasks() {
@@ -169,7 +182,7 @@ function renderSessionCards() {
               <div class="event-task-info">
                 <div class="event-task-title">${WP_ESC2(t.title)}</div>
                 <div class="event-task-meta">
-                  ${t.time ? `<span>🕐 ${t.time}</span>` : ''}
+                  ${t.time ? `<span>🕐 ${WP_ESC2(t.time)}</span>` : ''}
                   ${t.pic  ? `<span>👤 ${WP_ESC2(t.pic)}</span>` : ''}
                 </div>
               </div>
@@ -274,6 +287,7 @@ function deleteTask() {
 
 window.WP_Event = {
   initEvent,
+  resetToDefault,
   toggleTask,
   openAddModal,
   openEditModal,

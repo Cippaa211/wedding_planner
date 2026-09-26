@@ -202,15 +202,20 @@ async function initSeserahan() {
 }
 
 // ─── Load / Save ─────────────────────────────────────────────────────────────
+function getDefaultCategories() {
+  const defaults = WP_Utils.getEventType() === 'engagement'
+    ? DEFAULT_HANTARAN_CATEGORIES
+    : DEFAULT_SESERAHAN_CATEGORIES;
+  return JSON.parse(JSON.stringify(defaults));
+}
+
 async function loadSeserahanData() {
   const saved = await WP_DataStore.loadPageState(WP_Utils.STORAGE_KEYS.SESERAHAN, null);
-  if (saved && Array.isArray(saved) && saved.length > 0) {
+  // Daftar kosong tetap dihormati (pengguna menghapus semua kategori), hanya null = belum pernah disimpan
+  if (Array.isArray(saved)) {
     seserahanData = saved;
   } else {
-    const defaults = WP_Utils.getEventType() === 'engagement'
-      ? DEFAULT_HANTARAN_CATEGORIES
-      : DEFAULT_SESERAHAN_CATEGORIES;
-    seserahanData = JSON.parse(JSON.stringify(defaults));
+    seserahanData = getDefaultCategories();
     saveSeserahanData();
   }
 }
@@ -223,8 +228,11 @@ function saveSeserahanData() {
 function buildFilterOptions() {
   const select = document.getElementById('seserahan-filter-select');
   if (!select) return;
-  const opts = seserahanData.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+  const opts = seserahanData.map(c => `<option value="${escapeHtml(c.id)}">${escapeHtml(c.name)}</option>`).join('');
   select.innerHTML = `<option value="all">Semua Kategori</option>${opts}`;
+  // Pertahankan filter aktif bila kategorinya masih ada
+  if (!seserahanData.some(c => c.id === activeFilter)) activeFilter = 'all';
+  select.value = activeFilter;
 }
 
 function onFilterChange(val) {
@@ -258,6 +266,11 @@ function renderCategoryList() {
   const container = document.getElementById('seserahan-categories-container');
   if (!container) return;
 
+  if (seserahanData.length === 0) {
+    container.innerHTML = `<div class="card" style="text-align: center; color: var(--text-muted); font-size: var(--font-size-sm);">Belum ada kategori. Klik <strong>+ Tambah Kategori</strong> untuk mulai.</div>`;
+    return;
+  }
+
   const filtered = activeFilter === 'all'
     ? seserahanData
     : seserahanData.filter(c => c.id === activeFilter);
@@ -276,13 +289,16 @@ function renderCategoryCard(cat) {
     <div class="seserahan-category-group" id="cat-group-${cat.id}">
       <div class="seserahan-category-header" onclick="toggleCategory('${cat.id}')">
         <div class="seserahan-cat-left">
-          <div class="seserahan-cat-icon">${cat.icon}</div>
+          <div class="seserahan-cat-icon">${escapeHtml(cat.icon)}</div>
           <div>
-            <div class="seserahan-cat-name">${cat.name}</div>
+            <div class="seserahan-cat-name">${escapeHtml(cat.name)}</div>
             <div class="seserahan-cat-count">${doneCount}/${total} item selesai</div>
           </div>
         </div>
         <div class="seserahan-cat-right">
+          <button type="button" class="btn-icon-action" onclick="event.stopPropagation(); WP_Seserahan.openEditCategoryModal('${cat.id}')" title="Edit Kategori">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+          </button>
           <button type="button" class="btn-cat-add" onclick="event.stopPropagation(); openAddItemModal('${cat.id}')" title="Tambah Item">+</button>
           <button type="button" class="btn-cat-toggle ${isOpen ? 'open' : ''}" title="Expand/Collapse">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
@@ -352,7 +368,10 @@ function toggleItem(catId, itemId) {
 function openAddItemModal(catId) {
   // Kategori bisa berbeda per event_type; pakai kategori pertama bila tidak ditemukan
   const cat = seserahanData.find(c => c.id === catId) || seserahanData[0];
-  if (!cat) return;
+  if (!cat) {
+    WP_UI.showToast('Tambahkan kategori terlebih dahulu.', 'info');
+    return;
+  }
   catId = cat.id;
   editItemContext = { catId, itemId: null };
 
@@ -361,6 +380,7 @@ function openAddItemModal(catId) {
   document.getElementById('item-modal-price').value = '';
   document.getElementById('item-modal-link').value = '';
   document.getElementById('item-modal-cat').value = catId;
+  document.getElementById('btn-delete-item').style.display = 'none';
   document.getElementById('modal-add-item').classList.add('open');
 }
 
@@ -376,6 +396,7 @@ function openEditItemModal(catId, itemId) {
   document.getElementById('item-modal-price').value = item.price !== null ? item.price : '';
   document.getElementById('item-modal-link').value = item.link || '';
   document.getElementById('item-modal-cat').value = catId;
+  document.getElementById('btn-delete-item').style.display = 'inline-flex';
   document.getElementById('modal-add-item').classList.add('open');
 }
 
@@ -441,7 +462,78 @@ function handleDeleteItem() {
   }
 }
 
+// ─── Kategori ────────────────────────────────────────────────────────────────
+function categoryFields(cat = {}) {
+  return [
+    { name: 'name', label: 'Nama kategori', type: 'text', value: cat.name, required: true, placeholder: 'Contoh: Alat Ibadah' },
+    { name: 'icon', label: 'Ikon (emoji)', type: 'text', value: cat.icon || '🎁', placeholder: '🎁' }
+  ];
+}
+
+function openAddCategoryModal() {
+  WP_UI.openFormModal({
+    title: 'Tambah Kategori',
+    submitLabel: 'Tambah',
+    fields: [
+      ...categoryFields(),
+      { name: 'items', label: 'Item awal', type: 'lines', placeholder: 'Opsional, satu item per baris' }
+    ],
+    onSubmit: values => {
+      const now = Date.now();
+      seserahanData.push({
+        id: `cat-${now}`,
+        name: values.name,
+        icon: values.icon || '🎁',
+        isOpen: true,
+        items: values.items.map((name, i) => ({ id: `item-${now}-${i}`, name, done: false, price: null, link: '' }))
+      });
+      saveSeserahanData();
+      buildFilterOptions();
+      renderAll();
+      WP_UI.showToast(`Kategori "${values.name}" ditambahkan.`, 'success');
+    }
+  });
+}
+
+function openEditCategoryModal(catId) {
+  const cat = seserahanData.find(c => c.id === catId);
+  if (!cat) return;
+  WP_UI.openFormModal({
+    title: `Edit Kategori — ${cat.name}`,
+    fields: categoryFields(cat),
+    onSubmit: values => {
+      cat.name = values.name;
+      cat.icon = values.icon || '🎁';
+      saveSeserahanData();
+      buildFilterOptions();
+      renderAll();
+      WP_UI.showToast('Kategori diperbarui.', 'success');
+    },
+    onDelete: () => {
+      seserahanData = seserahanData.filter(c => c.id !== catId);
+      saveSeserahanData();
+      buildFilterOptions();
+      renderAll();
+      WP_UI.showToast(`Kategori "${cat.name}" dihapus.`, 'info');
+    },
+    deleteConfirm: `Hapus kategori "${cat.name}" beserta ${cat.items.length} item di dalamnya?`
+  });
+}
+
+async function resetToDefault() {
+  if (!confirm('Kembalikan semua kategori & item ke daftar bawaan? Semua perubahan, harga, dan centang di halaman ini akan hilang.')) return;
+  seserahanData = getDefaultCategories();
+  activeFilter = 'all';
+  await saveSeserahanData();
+  buildFilterOptions();
+  renderAll();
+  WP_UI.showToast('Daftar dikembalikan ke bawaan.', 'info');
+}
+
 window.WP_Seserahan = {
+  openAddCategoryModal,
+  openEditCategoryModal,
+  resetToDefault,
   initSeserahan,
   onFilterChange,
   toggleCategory,

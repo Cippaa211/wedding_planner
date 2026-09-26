@@ -116,6 +116,24 @@ CREATE TABLE IF NOT EXISTS public.event_settings (
   PRIMARY KEY (event_id, setting_key)
 );
 
+-- 9. TABUNGAN (catatan tabungan CPP & CPW, satu baris per catatan)
+CREATE TABLE IF NOT EXISTS public.savings_entries (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  event_id UUID REFERENCES public.wedding_events(id) ON DELETE CASCADE NOT NULL,
+  event_type TEXT NOT NULL DEFAULT 'wedding'
+    CONSTRAINT savings_entries_event_type_check CHECK (event_type IN ('wedding', 'engagement')),
+  contributor TEXT NOT NULL
+    CONSTRAINT savings_entries_contributor_check CHECK (contributor IN ('cpp', 'cpw')),
+  amount NUMERIC(15, 2) NOT NULL
+    CONSTRAINT savings_entries_amount_check CHECK (amount > 0),
+  saved_at DATE NOT NULL DEFAULT CURRENT_DATE,
+  note TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS savings_entries_event_id_type_idx
+  ON public.savings_entries(event_id, event_type, saved_at DESC);
+
 -- ==============================================================================
 -- ROW LEVEL SECURITY (RLS) - KEAMANAN DATA PENGGUNA
 -- ==============================================================================
@@ -127,6 +145,7 @@ ALTER TABLE public.budget_items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.seserahan_items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.guests ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.event_settings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.savings_entries ENABLE ROW LEVEL SECURITY;
 
 -- Policy Profiles
 CREATE POLICY "Users can view own profile" ON public.profiles
@@ -162,6 +181,13 @@ CREATE POLICY "Users can CRUD own guests" ON public.guests
     event_id IN (SELECT id FROM public.wedding_events WHERE user_id = auth.uid())
   );
 
+CREATE POLICY "Users can CRUD own savings entries" ON public.savings_entries
+  FOR ALL TO authenticated USING (
+    event_id IN (SELECT id FROM public.wedding_events WHERE user_id = auth.uid())
+  ) WITH CHECK (
+    event_id IN (SELECT id FROM public.wedding_events WHERE user_id = auth.uid())
+  );
+
 CREATE POLICY "Users can CRUD own event settings" ON public.event_settings
   FOR ALL TO authenticated USING (
     event_id IN (SELECT id FROM public.wedding_events WHERE user_id = auth.uid())
@@ -173,7 +199,7 @@ CREATE POLICY "Users can CRUD own event settings" ON public.event_settings
 GRANT USAGE ON SCHEMA public TO authenticated;
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.profiles, public.wedding_events,
   public.tasks, public.budget_items, public.seserahan_items, public.guests,
-  public.event_settings TO authenticated;
+  public.event_settings, public.savings_entries TO authenticated;
 
 -- ==============================================================================
 -- AUTOMATIC TRIGGER: Inisialisasi Profil & Data Acara saat User Baru Mendaftar
